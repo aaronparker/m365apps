@@ -37,7 +37,10 @@ param(
 
     [Parameter(Mandatory = $false, HelpMessage = "Specify to validate manifest file configuration.")]
     [ValidateNotNullOrEmpty()]
-    [System.Management.Automation.SwitchParameter] $Validate
+    [System.Management.Automation.SwitchParameter] $Validate,
+
+    [Parameter(Mandatory = $false)]
+    [System.String] $SetupVersion
 )
 process {
     # Read app data from JSON manifest
@@ -436,7 +439,7 @@ process {
         "DisplayName"              = $AppData.Information.DisplayName
         "Description"              = $AppData.Information.Description
         "AppVersion"               = $AppData.PackageInformation.Version
-        "Notes"                    = "Created by GitHub Workflow [$env:GITHUB_WORKFLOW] in repository [$env:GITHUB_REPOSITORY] on $(Get-Date -Format "yyyy-MM-dd")."
+        "Notes"                    = "Created by GitHub Workflow [$env:GITHUB_WORKFLOW] in repository [$env:GITHUB_REPOSITORY] on $(Get-Date -Format "yyyy-MM-dd") using setup.exe $SetupVersion."
         "Publisher"                = $AppData.Information.Publisher
         "InformationURL"           = $AppData.Information.InformationURL
         "PrivacyURL"               = $AppData.Information.PrivacyURL

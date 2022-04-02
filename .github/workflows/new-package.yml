@@ -200,8 +200,9 @@ jobs:
           $global:AuthToken = Connect-MSIntuneGraph @params
 
           $params = @{
-            Json        = "${{ github.workspace }}\scripts\Temp.json"
-            PackageFile = "${{steps.extract.outputs.intunewin-path}}"
+            Json         = "${{ github.workspace }}\scripts\Temp.json"
+            PackageFile  = "${{steps.extract.outputs.intunewin-path}}"
+            SetupVersion = "${{steps.get-setup.outputs.version}}"
           }
           . ${{ github.workspace }}\scripts\Create-Win32App.ps1 @params
 
