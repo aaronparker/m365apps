@@ -1,2 +1,3 @@
-# m365apps
-Workflows for building a Microsoft 365 Apps package and importing into Intune in Win32 format
+# Microsoft 365 Apps packager
+
+A workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.

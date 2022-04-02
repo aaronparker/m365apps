@@ -1,0 +1,34 @@
+# Cache objects
+packer_cache/
+
+# Crash log
+crash.log
+
+# For built boxes
+*.box
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temp
+tmp/**
+output/**
+artifacts/**
+
+# PSAppDeployToolkit
+PSAppDeployToolkit/PSAppDeployToolkit.pdf
+PSAppDeployToolkit/Examples/**
+PSAppDeployToolkit/CHANGELOG.txt
+PSAppDeployToolkit/LICENSE.txt
+PSAppDeployToolkit/Toolkit/Files/**
+
+# Package temp files
+scripts/Temp.json
+*.ico
