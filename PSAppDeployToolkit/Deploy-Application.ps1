@@ -147,7 +147,7 @@ Try {
 		##*===============================================
 		[string]$installPhase = 'Installation'
 
-		## Install Microsoft 365 Apps for Enterprise with content from the Office CDN
+		# Install Microsoft 365 Apps for Enterprise with content from the Office CDN
 		Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
 
 		## Handle Zero-Config MSI Installations
@@ -196,6 +196,8 @@ Try {
 		}
 
 		# <Perform Uninstallation tasks here>
+		# Uninstall Microsoft 365 Apps for Enterprise
+		Execute-Process -Path "setup.exe" -Parameters "/configure Uninstall-Microsoft365Apps.xml"
 
 
 		##*===============================================
