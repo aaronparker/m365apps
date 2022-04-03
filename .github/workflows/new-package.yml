@@ -1,3 +1,7 @@
+# Creates a Microsoft 365 Apps package and optionally imports into a target Intune tenant
+# Uses inputs captured when running the workflow
+# clientid and clientsecret are stored in /github/workflow/event.json in clear text
+# This workflow should redact these values at the end of the run
 name: new-package
 
 env:

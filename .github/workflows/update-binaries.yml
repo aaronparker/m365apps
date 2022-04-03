@@ -1,3 +1,7 @@
+# Updates binaries required for packaging the Microsoft 365 Apps
+# setup.exe from the Office Deployment Tool
+# PSAppDeployToolkit to manage the install
+# Microsoft Win32 Content Prep Tool (IntuneWinAppUtil.exe) to package into intunewin format
 name: update-binaries
 
 env:
