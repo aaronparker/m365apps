@@ -36,7 +36,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Test for config file
         id: test-config-file
@@ -134,7 +134,7 @@ jobs:
 
     # Steps here need to run in Windows PowerShell due to module requirements
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         id: download
