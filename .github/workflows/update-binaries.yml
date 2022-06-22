@@ -62,7 +62,7 @@ jobs:
           $File = Get-Item -Path "${{ github.workspace }}\m365\setup.exe"
           $Json = Get-Content -Path "${{ github.workspace }}\scripts\App.json" | ConvertFrom-Json
           $Json.PackageInformation.Version = $File.VersionInfo.ProductVersion
-          $Json | ConvertFrom-Json | Out-File -Path "${{ github.workspace }}\scripts\App.json" -Encoding "Utf8" -NoNewLine -Force
+          $Json | ConvertTo-Json | Out-File -Path "${{ github.workspace }}\scripts\App.json" -Encoding "Utf8" -NoNewLine -Force
 
       - name: Update IntuneWinAppUtil.exe
         shell: pwsh
