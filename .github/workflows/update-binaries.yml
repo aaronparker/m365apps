@@ -19,7 +19,7 @@ on:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v3
@@ -34,35 +34,43 @@ jobs:
       - name: New tmp dir
         shell: pwsh
         run: |
-          New-Item -Path "${{ github.workspace }}/tmp" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+          New-Item -Path "${{ github.workspace }}\tmp" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
       - name: Update PSAppDeployToolkit
         shell: pwsh
         run: |
-          New-Item -Path "${{ github.workspace }}/PSAppDeployToolkit" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-          $File = Get-EvergreenApp -Name "PSAppDeployToolkit" | Save-EvergreenApp -Path "${{ github.workspace }}/tmp"
-          Expand-Archive -LiteralPath $File.FullName -DestinationPath "${{ github.workspace }}/PSAppDeployToolkit" -Force
+          New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+          $File = Get-EvergreenApp -Name "PSAppDeployToolkit" | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
+          Expand-Archive -LiteralPath $File.FullName -DestinationPath "${{ github.workspace }}\PSAppDeployToolkit" -Force
 
       - name: Restore PSAppDeployToolkit scripts
         shell: pwsh
         run: |
-          Copy-Item -Path "${{ github.workspace }}/PSAppDeployToolkit/Deploy-Application.ps1" -Destination "${{ github.workspace }}/PSAppDeployToolkit/Toolkit/Deploy-Application.ps1"
-          Copy-Item -Path "${{ github.workspace }}/scrub/*.vbs" -Destination "${{ github.workspace }}/PSAppDeployToolkit/Toolkit/SupportFiles"
+          Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Deploy-Application.ps1" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1"
+          Copy-Item -Path "${{ github.workspace }}\scrub\*.vbs" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\SupportFiles"
 
       - name: Update setup.exe
         shell: pwsh
         run: |
-          New-Item -Path "${{ github.workspace }}/m365" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-          $File = Get-EvergreenApp -Name "Microsoft365Apps" | Select-Object -First 1 | Save-EvergreenApp -Path "${{ github.workspace }}/tmp"
-          Move-Item -LiteralPath $File.FullName -Destination "${{ github.workspace }}/m365/$($File.Name)" -Force
+          New-Item -Path "${{ github.workspace }}\m365" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+          $File = Get-EvergreenApp -Name "Microsoft365Apps" | Select-Object -First 1 | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
+          Move-Item -LiteralPath $File.FullName -Destination "${{ github.workspace }}\m365\$($File.Name)" -Force
+
+      - name: Update App.json
+        shell: pwsh
+        run: |
+          $File = Get-Item -Path "${{ github.workspace }}\m365\setup.exe"
+          $Json = Get-Content -Path "${{ github.workspace }}\scripts\App.json" | ConvertFrom-Json
+          $Json.PackageInformation.Version = $File.VersionInfo.ProductVersion
+          $Json | ConvertFrom-Json | Out-File -Path "${{ github.workspace }}\scripts\App.json" -Encoding "Utf8" -NoNewLine -Force
 
       - name: Update IntuneWinAppUtil.exe
         shell: pwsh
         run: |
-          New-Item -Path "${{ github.workspace }}/intunewin" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+          New-Item -Path "${{ github.workspace }}\intunewin" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           $params = @{
               Uri             = "https://raw.githubusercontent.com/microsoft/Microsoft-Win32-Content-Prep-Tool/master/IntuneWinAppUtil.exe"
-              OutFile         = "${{ github.workspace }}/intunewin/IntuneWinAppUtil.exe"
+              OutFile         = "${{ github.workspace }}\intunewin\IntuneWinAppUtil.exe"
               UseBasicParsing = $True
           }
           Invoke-WebRequest @params
