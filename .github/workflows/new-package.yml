@@ -166,7 +166,7 @@ jobs:
         id: get-setup
         shell: powershell
         run: |
-          $SetupVersion = (Get-Item -Path "${{ github.workspace }}\m365\setup.exe").VersionInfo.FileVersion
+          $SetupVersion = (Get-Item -Path "${{ github.workspace }}\m365\setup.exe").VersionInfo.ProductVersion
           echo "::set-output name=version::$($SetupVersion)"
 
       # Update App.json with DisplayName and setup.exe version

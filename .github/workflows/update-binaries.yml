@@ -93,8 +93,7 @@ jobs:
       - name: Get date
         id: get-date
         run: |
-          DATEF=`date +%Y.%m.%d`
-          echo "::set-output name=date::$DATEF"
+          echo "::set-output name=date::$(Get-Date -Format "yyyy.MM.dd")"
 
       - name: Commit changes
         id: commit
