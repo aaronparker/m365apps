@@ -2,7 +2,7 @@
   "PackageInformation": {
     "SetupType": "EXE",
     "SetupFile": "Setup.exe",
-    "Version": "16.0.15225.20172",
+    "Version": "16.0.15330.20218",
     "SourceFolder": "Source",
     "OutputFolder": "Package",
     "IconFile": "https://github.com/aaronparker/icons/raw/main/icons/Microsoft-Office.png"
