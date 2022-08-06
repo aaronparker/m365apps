@@ -31,4 +31,4 @@ PSAppDeployToolkit/Toolkit/Files/**
 
 # Package temp files
 scripts/Temp.json
-*.ico
+
