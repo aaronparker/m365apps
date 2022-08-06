@@ -1,12 +1,12 @@
-<Configuration ID="f6bd3182-9c3a-4d6a-bbc7-457d2c8e13dd">
+<Configuration ID="1810af5c-c16f-499e-9654-404fad40e841">
   <Add OfficeClientEdition="64" Channel="Current" MigrateArch="TRUE">
     <Product ID="O365ProPlusRetail">
       <Language ID="MatchOS" />
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Bing" />
     </Product>
   </Add>
