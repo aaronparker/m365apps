@@ -39,17 +39,17 @@
 #>
 [CmdletBinding()]
 Param (
-	[Parameter(Mandatory=$false)]
-	[ValidateSet('Install','Uninstall','Repair')]
+	[Parameter(Mandatory = $false)]
+	[ValidateSet('Install', 'Uninstall', 'Repair')]
 	[string]$DeploymentType = 'Install',
-	[Parameter(Mandatory=$false)]
-	[ValidateSet('Interactive','Silent','NonInteractive')]
+	[Parameter(Mandatory = $false)]
+	[ValidateSet('Interactive', 'Silent', 'NonInteractive')]
 	[string]$DeployMode = 'Interactive',
-	[Parameter(Mandatory=$false)]
+	[Parameter(Mandatory = $false)]
 	[switch]$AllowRebootPassThru = $false,
-	[Parameter(Mandatory=$false)]
+	[Parameter(Mandatory = $false)]
 	[switch]$TerminalServerMode = $false,
-	[Parameter(Mandatory=$false)]
+	[Parameter(Mandatory = $false)]
 	[switch]$DisableLogging = $false
 )
 
@@ -98,7 +98,7 @@ Try {
 		If ($DisableLogging) { . $moduleAppDeployToolkitMain -DisableLogging } Else { . $moduleAppDeployToolkitMain }
 	}
 	Catch {
-		If ($mainExitCode -eq 0){ [int32]$mainExitCode = 60008 }
+		If ($mainExitCode -eq 0) { [int32]$mainExitCode = 60008 }
 		Write-Error -Message "Module [$moduleAppDeployToolkitMain] failed to load: `n$($_.Exception.Message)`n `n$($_.InvocationInfo.PositionMessage)" -ErrorAction 'Continue'
 		## Exit the script, returning the exit code to SCCM
 		If (Test-Path -LiteralPath 'variable:HostInvocation') { $script:ExitCode = $mainExitCode; Exit } Else { Exit $mainExitCode }
@@ -116,23 +116,31 @@ Try {
 		##*===============================================
 		[string]$installPhase = 'Pre-Installation'
 
-		## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
-		Show-InstallationWelcome -CloseApps 'iexplore' -AllowDefer -DeferTimes 3 -CheckDiskSpace -PersistPrompt
+		## Remove Office 2013  MSI installations
+		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
+			Show-InstallationProgress "Uninstalling Microsoft Office 2013"
+			Write-Log "Microsoft Office 2013 was detected. Uninstalling..."
+			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
+		}
 
-		## Show Progress Message (with the default message)
-		Show-InstallationProgress
-
-		## <Perform Pre-Installation tasks here>
-
+		## Remove Office 2016 MSI installations
+		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
+			Show-InstallationProgress "Uninstalling Microsoft Office 2016"
+			Write-Log "Microsoft Office 2016 was detected. Uninstalling..."
+			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
+		}
 
 		##*===============================================
 		##* INSTALLATION
 		##*===============================================
 		[string]$installPhase = 'Installation'
 
+		# Install Microsoft 365 Apps for Enterprise with content from the Office CDN
+		Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
+
 		## Handle Zero-Config MSI Installations
 		If ($useDefaultMsi) {
-			[hashtable]$ExecuteDefaultMSISplat =  @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
+			[hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
 			Execute-MSI @ExecuteDefaultMSISplat; If ($defaultMspFiles) { $defaultMspFiles | ForEach-Object { Execute-MSI -Action 'Patch' -Path $_ } }
 		}
 
@@ -149,8 +157,7 @@ Try {
 		## Display a message at the end of the install
 		If (-not $useDefaultMsi) { Show-InstallationPrompt -Message 'You can customize text to appear at the end of an install or remove it completely for unattended installations.' -ButtonRightText 'OK' -Icon Information -NoWait }
 	}
-	ElseIf ($deploymentType -ieq 'Uninstall')
-	{
+	ElseIf ($deploymentType -ieq 'Uninstall') {
 		##*===============================================
 		##* PRE-UNINSTALLATION
 		##*===============================================
@@ -172,11 +179,13 @@ Try {
 
 		## Handle Zero-Config MSI Uninstallations
 		If ($useDefaultMsi) {
-			[hashtable]$ExecuteDefaultMSISplat =  @{ Action = 'Uninstall'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
+			[hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Uninstall'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
 			Execute-MSI @ExecuteDefaultMSISplat
 		}
 
 		# <Perform Uninstallation tasks here>
+		# Uninstall Microsoft 365 Apps for Enterprise
+		Execute-Process -Path "setup.exe" -Parameters "/configure Uninstall-Microsoft365Apps.xml"
 
 
 		##*===============================================
@@ -188,8 +197,7 @@ Try {
 
 
 	}
-	ElseIf ($deploymentType -ieq 'Repair')
-	{
+	ElseIf ($deploymentType -ieq 'Repair') {
 		##*===============================================
 		##* PRE-REPAIR
 		##*===============================================
@@ -207,7 +215,7 @@ Try {
 
 		## Handle Zero-Config MSI Repairs
 		If ($useDefaultMsi) {
-			[hashtable]$ExecuteDefaultMSISplat =  @{ Action = 'Repair'; Path = $defaultMsiFile; }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
+			[hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Repair'; Path = $defaultMsiFile; }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
 			Execute-MSI @ExecuteDefaultMSISplat
 		}
 		# <Perform Repair tasks here>
@@ -220,7 +228,7 @@ Try {
 		## <Perform Post-Repair tasks here>
 
 
-    }
+	}
 	##*===============================================
 	##* END SCRIPT BODY
 	##*===============================================
