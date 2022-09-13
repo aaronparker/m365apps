@@ -138,7 +138,7 @@ jobs:
 
       - name: Install and cache PowerShell modules
         id: psmodulecache
-        uses: potatoqualitee/psmodulecache@v4.5
+        uses: potatoqualitee/psmodulecache@v5.0
         with:
           modules-to-cache: PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune
           shell: powershell
