@@ -66,8 +66,8 @@ process {
 
     # Create default requirement rule
     $params = @{
-        Architecture                    = $AppData.RequirementRule.Architecture
-        MinimumSupportedOperatingSystem = $AppData.RequirementRule.MinimumRequiredOperatingSystem
+        Architecture                   = $AppData.RequirementRule.Architecture
+        MinimumSupportedWindowsRelease = $AppData.RequirementRule.MinimumRequiredOperatingSystem
     }
     $RequirementRule = New-IntuneWin32AppRequirementRule @params
 
@@ -441,6 +441,7 @@ process {
         "AppVersion"               = $AppData.PackageInformation.Version
         "Notes"                    = "Created by GitHub Workflow [$env:GITHUB_WORKFLOW] in repository [$env:GITHUB_REPOSITORY] on $(Get-Date -Format "yyyy-MM-dd") using setup.exe $SetupVersion."
         "Publisher"                = $AppData.Information.Publisher
+        "Developer"                = $AppData.Information.Publisher
         "InformationURL"           = $AppData.Information.InformationURL
         "PrivacyURL"               = $AppData.Information.PrivacyURL
         "CompanyPortalFeaturedApp" = $false
@@ -448,7 +449,6 @@ process {
         "RestartBehavior"          = $AppData.Program.DeviceRestartBehavior
         "DetectionRule"            = $DetectionRules
         "RequirementRule"          = $RequirementRule
-        "Verbose"                  = $true
     }
 
     # Dynamically add additional parameters for Win32 app
