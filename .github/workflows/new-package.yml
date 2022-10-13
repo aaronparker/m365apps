@@ -196,6 +196,7 @@ jobs:
         id: upload-package
         shell: powershell
         run: |
+          Import-Module -Name "IntuneWin32App" -Force
           $params = @{
             TenantId   = "${{ github.event.inputs.tenantid }}"
             ClientID     = $(jq -r '.inputs.clientid' $env:GITHUB_EVENT_PATH)
