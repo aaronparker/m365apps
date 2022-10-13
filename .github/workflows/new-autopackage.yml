@@ -140,7 +140,8 @@ jobs:
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v5.0
         with:
-          modules-to-cache: PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune
+          modules-to-cache: "MSAL.PS::, PSIntuneAuth::, AzureAD::, IntuneWin32App::, Microsoft.Graph.Intune::"
+          updatable: true
           shell: powershell
 
       # Get version number from setup.exe
@@ -177,7 +178,7 @@ jobs:
         id: upload-package
         shell: powershell
         run: |
-          Import-Module -Name "IntuneWin32App" -Force
+          Import-Module -Name MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune -Force
           $params = @{
             TenantId     = "${{ secrets.TENANT_ID }}"
             ClientID     = "${{ secrets.CLIENT_ID }}"
