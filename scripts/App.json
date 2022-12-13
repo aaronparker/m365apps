@@ -42,7 +42,7 @@
       "DetectionMethod": "StringComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "ProductReleaseIds",
-      "Operator": "equals",
+      "Operator": "equal",
       "Value": "O365ProPlusRetail",
       "Check32BitOn64System": "true"
     },
@@ -51,7 +51,7 @@
       "DetectionMethod": "StringComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "StreamingFinished",
-      "Operator": "equals",
+      "Operator": "equal",
       "Value": "True",
       "Check32BitOn64System": "true"
     }
