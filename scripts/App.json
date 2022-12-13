@@ -31,10 +31,29 @@
     {
       "Type": "Registry",
       "DetectionMethod": "Existence",
-      "KeyPath": "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\O365ProPlusRetail - en-us",
-      "ValueName": "",
-      "DetectionType": "exists",
-      "Check32BitOn64System": "false"
+      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+      "ValueName": "ClientVersionToReport",
+      "Operator": "greaterThanOrEqual",
+      "Value": "16.0.15726.20188",
+      "Check32BitOn64System": "true"
+    },
+    {
+      "Type": "Registry",
+      "DetectionMethod": "Existence",
+      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+      "ValueName": "ProductReleaseIds",
+      "Operator": "equals",
+      "Value": "O365ProPlusRetail",
+      "Check32BitOn64System": "true"
+    },
+    {
+      "Type": "Registry",
+      "DetectionMethod": "Existence",
+      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+      "ValueName": "StreamingFinished",
+      "Operator": "equals",
+      "Value": "True",
+      "Check32BitOn64System": "true"
     }
   ]
 }

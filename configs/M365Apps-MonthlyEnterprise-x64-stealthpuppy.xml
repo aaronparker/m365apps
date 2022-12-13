@@ -1,18 +1,16 @@
-<Configuration ID="cd73a488-f760-4bee-be95-d4212c1f93ab">
-  <Add OfficeClientEdition="64" Channel="Current" MigrateArch="TRUE">
+<Configuration ID="1810af5c-c16f-499e-9654-404fad40e841">
+  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365ProPlusRetail">
       <Language ID="MatchOS" />
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="OneDrive" />
       <ExcludeApp ID="Publisher" />
       <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Teams" />
     </Product>
   </Add>
-  <Property Name="SharedComputerLicensing" Value="1" />
+  <Property Name="SharedComputerLicensing" Value="0" />
   <Property Name="FORCEAPPSHUTDOWN" Value="FALSE" />
   <Property Name="DeviceBasedLicensing" Value="0" />
   <Property Name="SCLCacheOverride" Value="0" />
