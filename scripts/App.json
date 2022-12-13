@@ -30,7 +30,7 @@
   "DetectionRule": [
     {
       "Type": "Registry",
-      "DetectionMethod": "Existence",
+      "DetectionMethod": "VersionComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "ClientVersionToReport",
       "Operator": "greaterThanOrEqual",
@@ -39,7 +39,7 @@
     },
     {
       "Type": "Registry",
-      "DetectionMethod": "Existence",
+      "DetectionMethod": "StringComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "ProductReleaseIds",
       "Operator": "equals",
@@ -48,7 +48,7 @@
     },
     {
       "Type": "Registry",
-      "DetectionMethod": "Existence",
+      "DetectionMethod": "StringComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "StreamingFinished",
       "Operator": "equals",
