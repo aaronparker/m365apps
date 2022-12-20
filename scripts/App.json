@@ -32,10 +32,10 @@
       "Type": "Registry",
       "DetectionMethod": "VersionComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
-      "ValueName": "ClientVersionToReport",
+      "ValueName": "VersionToReport",
       "Operator": "greaterThanOrEqual",
-      "Value": "16.0.15726.20188",
-      "Check32BitOn64System": "true"
+      "Value": "16.0.15726.20262",
+      "Check32BitOn64System": "false"
     },
     {
       "Type": "Registry",
@@ -44,7 +44,7 @@
       "ValueName": "ProductReleaseIds",
       "Operator": "equal",
       "Value": "O365ProPlusRetail",
-      "Check32BitOn64System": "true"
+      "Check32BitOn64System": "false"
     },
     {
       "Type": "Registry",
@@ -53,7 +53,16 @@
       "ValueName": "StreamingFinished",
       "Operator": "equal",
       "Value": "True",
-      "Check32BitOn64System": "true"
+      "Check32BitOn64System": "false"
+    },
+    {
+      "Type": "Registry",
+      "DetectionMethod": "StringComparison",
+      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+      "ValueName": "SharedComputerLicensing",
+      "Operator": "equal",
+      "Value": "0",
+      "Check32BitOn64System": "false"
     }
   ]
 }

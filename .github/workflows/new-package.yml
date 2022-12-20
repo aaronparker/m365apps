@@ -2,7 +2,7 @@
 # Uses inputs captured when running the workflow
 # clientid and clientsecret are stored in /github/workflow/event.json in clear text
 # This workflow should redact these values at the end of the run
-name: new-package
+name: New package and optional import
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,24 +41,28 @@ jobs:
       - name: Test for config file
         id: test-config-file
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           Test-Path -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
 
       - name: Test for IntuneWinAppUtil.exe
         id: test-intunewin
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           Test-Path -Path "${{ github.workspace }}\intunewin\IntuneWinAppUtil.exe"
 
       - name: Unblock files
         id: unblock-files
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Include *.exe | Unblock-File
 
       - name: Create directories
         id: create-dirs
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           New-Item -Path "${{ github.workspace }}\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
@@ -66,12 +70,14 @@ jobs:
       - name: Copy config file
         id: copy-config-file
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           Copy-Item -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
 
       - name: Copy setup files
         id: copy-setup-files
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           Copy-Item -Path "${{ github.workspace }}\m365\setup.exe" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\setup.exe"
           Copy-Item -Path "${{ github.workspace }}\configs\Uninstall-Microsoft365Apps.xml" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
@@ -79,6 +85,7 @@ jobs:
       - name: Create package
         id: create-package
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           $PackagePath = "${{ github.workspace }}\PSAppDeployToolkit\Toolkit"
           $PackageOutput = "${{ github.workspace }}\output"
@@ -95,6 +102,7 @@ jobs:
       - name: Copy package
         id: copy-package
         shell: pwsh
+        working-directory: "${{ github.workspace }}"
         run: |
           $Release = "$(Get-Date -Format yyyyMMdd).$(${{ github.run_number }})"
           New-Item -Path "${{ github.workspace }}\packages\$Release" -ItemType "Directory" -ErrorAction "SilentlyContinue"
@@ -144,6 +152,7 @@ jobs:
       - name: Extract artifacts
         id: extract
         shell: powershell
+        working-directory: "${{ github.workspace }}"
         run: |
           Get-ChildItem -Path "${{steps.download.outputs.download-path}}" -Include *.zip -Recurse | `
           ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath "${{steps.download.outputs.download-path}}" -Force }
@@ -166,6 +175,7 @@ jobs:
       - name: Get setup.exe version
         id: get-setup
         shell: powershell
+        working-directory: "${{ github.workspace }}"
         run: |
           $SetupVersion = (Get-Item -Path "${{ github.workspace }}\m365\setup.exe").VersionInfo.ProductVersion
           echo "::set-output name=version::$($SetupVersion)"
@@ -174,6 +184,7 @@ jobs:
       - name: Update App.json
         id: update-json
         shell: powershell
+        working-directory: "${{ github.workspace }}"
         run: |
           Copy-Item -Path "${{ github.workspace }}\scripts\App.json" -Destination "${{ github.workspace }}\scripts\Temp.json"
 
@@ -196,6 +207,7 @@ jobs:
       - name: Authn to the Graph API and upload M365 package
         id: upload-package
         shell: powershell
+        working-directory: "${{ github.workspace }}"
         run: |
           Import-Module -Name MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune -Force
           $params = @{
