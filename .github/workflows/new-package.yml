@@ -13,7 +13,7 @@ on:
       configuration:
         description: Configuration XML file to include in the package.
         required: true
-        default: M365Apps-Visio-Project-Current-x64.xml
+        default: "MonthlyEnterprise-x64.xml"
       import:
         description: "Import package?"
         required: false
