@@ -43,7 +43,7 @@
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "ProductReleaseIds",
       "Operator": "equal",
-      "Value": "O365ProPlusRetail",
+      "Value": "O365ProPlusRetail,ProjectProRetail,VisioProRetail",
       "Check32BitOn64System": "false"
     },
     {

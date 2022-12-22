@@ -168,21 +168,11 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
-          Copy-Item -Path "${{ github.workspace }}\scripts\App.json" -Destination "${{ github.workspace }}\scripts\Temp.json"
-
-          $AppJson = Get-Content -Path "${{ github.workspace }}\scripts\Temp.json" | ConvertFrom-Json
-          $AppJson.PackageInformation.Version = "${{steps.get-setup.outputs.version}}"
-
-          [System.Xml.XmlDocument]$Xml = Get-Content -Path "${{steps.extract.outputs.xml-path}}"
-          $DisplayName = "Microsoft 365 Apps"
-          If ($Xml.Configuration.Add.Product.ID -match "Visio") { $DisplayName = "$DisplayName, Visio" }
-          If ($Xml.Configuration.Add.Product.ID -match "Project") { $DisplayName = "$DisplayName, Project" }
-          $DisplayName = "$DisplayName, $($Xml.Configuration.Add.Channel) channel"
-          If ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { $DisplayName = "$DisplayName, x64" }
-          If ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
-          $AppJson.Information.DisplayName = $DisplayName
-
-          $AppJson | ConvertTo-Json | Out-File -FilePath "${{ github.workspace }}\scripts\Temp.json" -Force
+          $params = @{
+              ConfigurationFile = "${{steps.extract.outputs.xml-path}}"
+              Version          = "${{steps.get-setup.outputs.version}}"   
+          }
+          .\scripts\New-Package.ps1 @params
 
       # Create the app package
       - name: Authn to the Graph API and upload M365 package
