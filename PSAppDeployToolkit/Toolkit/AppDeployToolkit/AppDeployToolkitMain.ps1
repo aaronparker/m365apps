@@ -107,9 +107,9 @@ Param (
 [String]$appDeployMainScriptFriendlyName = 'App Deploy Toolkit Main'
 
 ## Variables: Script Info
-[Version]$appDeployMainScriptVersion = [Version]'3.9.1'
+[Version]$appDeployMainScriptVersion = [Version]'3.9.2'
 [Version]$appDeployMainScriptMinimumConfigVersion = [Version]'3.9.0'
-[String]$appDeployMainScriptDate = '20/01/2023'
+[String]$appDeployMainScriptDate = '02/02/2023'
 [Hashtable]$appDeployMainScriptParameters = $PSBoundParameters
 
 ## Variables: Datetime and Culture
@@ -233,10 +233,10 @@ If ($envOSVersionRevision) { [string]$envOSVersion = "$($envOSVersion.ToString()
 [boolean]$IsWorkStationOS = [boolean]($envOSProductType -eq 1)
 [boolean]$IsMultiSessionOS = [boolean]($envOSName -match '^Microsoft Windows \d+ Enterprise for Virtual Desktops$')
 Switch ($envOSProductType) {
-	3 { [string]$envOSProductTypeName = 'Server' }
-	2 { [string]$envOSProductTypeName = 'Domain Controller' }
-	1 { [string]$envOSProductTypeName = 'Workstation' }
-	Default { [string]$envOSProductTypeName = 'Unknown' }
+    3 { [string]$envOSProductTypeName = 'Server' }
+    2 { [string]$envOSProductTypeName = 'Domain Controller' }
+    1 { [string]$envOSProductTypeName = 'Workstation' }
+    Default { [string]$envOSProductTypeName = 'Unknown' }
 }
 #  Get the OS Architecture
 [Boolean]$Is64Bit = [Boolean]((Get-WmiObject -Class 'Win32_Processor' -ErrorAction 'SilentlyContinue' | Where-Object { $_.DeviceID -eq 'CPU0' } | Select-Object -ExpandProperty 'AddressWidth') -eq 64)
@@ -287,6 +287,23 @@ Else {
     [String]$envCommonProgramFilesX86 = $envCommonProgramFiles
 }
 
+## Variables: Office C2R version, bitness and channel
+If ((Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -ErrorAction 'SilentlyContinue').PSObject.Properties.Name -contains 'VersionToReport') {
+    [String]$envOfficeVersion = (Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -Name 'VersionToReport' -ErrorAction 'SilentlyContinue').VersionToReport
+}
+If ((Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -ErrorAction 'SilentlyContinue').PSObject.Properties.Name -contains 'Platform') {
+    [String]$envOfficeBitness = (Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -Name 'Platform' -ErrorAction 'SilentlyContinue').Platform
+}
+If ((Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -ErrorAction 'SilentlyContinue').PSObject.Properties.Name -contains 'CDNBaseURL') {
+    [String]$envOfficeCDNBaseURL = (Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration' -Name 'CDNBaseURL' -ErrorAction 'SilentlyContinue').CDNBaseURL
+    Switch -regex ([String]$envofficeCDNBaseURL) {
+        "492350f6-3a01-4f97-b9c0-c7c6ddf67d60" {$envOfficeChannel = "monthly"}
+        "7ffbc6bf-bc32-4f92-8982-f9dd17fd3114" {$envOfficeChannel = "semi-annual"}
+        "64256afe-f5d9-4f86-8936-8840a6a4f5be" {$envOfficeChannel = "monthly targeted"}
+        "b8f9b850-328d-4355-9145-c59439a0c4cf" {$envOfficeChannel = "semi-annual targeted"}
+    }
+}
+
 ## Variables: Hardware
 [Int32]$envSystemRAM = Get-WmiObject -Class 'Win32_PhysicalMemory' -ErrorAction 'SilentlyContinue' | Measure-Object -Property 'Capacity' -Sum -ErrorAction 'SilentlyContinue' | ForEach-Object { [Math]::Round(($_.Sum / 1GB), 2) }
 
@@ -332,7 +349,10 @@ $GetAccountNameUsingSid = [ScriptBlock] {
 }
 [String]$LocalSystemNTAccount = & $GetAccountNameUsingSid 'LocalSystemSid'
 [String]$LocalUsersGroup = & $GetAccountNameUsingSid 'BuiltinUsersSid'
-[String]$LocalPowerUsersGroup = & $GetAccountNameUsingSid 'BuiltinPowerUsersSid'
+# Test if the current Windows is a Home edition
+If (!((Get-ComputerInfo -ErrorAction 'SilentlyContinue' | Select -Property WindowsProductName).WindowsProductName -like "*Home*")){
+    [string]$LocalPowerUsersGroup = & $GetAccountNameUsingSid 'BuiltinPowerUsersSid'
+}
 [String]$LocalAdministratorsGroup = & $GetAccountNameUsingSid 'BuiltinAdministratorsSid'
 #  Check if script is running in session zero
 If ($IsLocalSystemAccount -or $IsLocalServiceAccount -or $IsNetworkServiceAccount -or $IsServiceAccount) {
@@ -554,7 +574,7 @@ If ($configToolkitRequireAdmin -eq $false) {
 [String]$dirAppDeployTemp = Join-Path -Path $configToolkitTempPath -ChildPath $appDeployToolkitName
 
 If (-not (Test-Path -LiteralPath $dirAppDeployTemp -PathType 'Container' -ErrorAction 'SilentlyContinue')) {
-    New-Item -Path $dirAppDeployTemp -ItemType 'Directory' -Force -ErrorAction 'SilentlyContinue'
+    $null = New-Item -Path $dirAppDeployTemp -ItemType 'Directory' -Force -ErrorAction 'SilentlyContinue'
 }
 
 ## Set the deployment type to "Install" if it has not been specified
@@ -2952,10 +2972,10 @@ Returns a PSObject with information about an installed application
 Get-InstalledApplication -Name 'Adobe Flash'
 
 .EXAMPLE
-	Get-InstalledApplication -ProductCode '{1AD147D0-BE0E-3D6C-AC11-64F6DC4163F1}'
+    Get-InstalledApplication -ProductCode '{1AD147D0-BE0E-3D6C-AC11-64F6DC4163F1}'
 .Outputs
-	For every detected matching Application the Function puts out a custom Object containing the following Properties:
-	DisplayName, DisplayVersion, InstallDate, Publisher, Is64BitApplication, ProductCode, InstallLocation, UninstallSubkey, UninstallString, InstallSource.
+    For every detected matching Application the Function puts out a custom Object containing the following Properties:
+    DisplayName, DisplayVersion, InstallDate, Publisher, Is64BitApplication, ProductCode, InstallLocation, UninstallSubkey, UninstallString, InstallSource.
 .NOTES
 
 .LINK
@@ -3738,9 +3758,9 @@ Removes all versions of software that match the name "Adobe"
 .EXAMPLE
 
 Remove-MSIApplications -Name 'Java 8 Update' -FilterApplication @(
-		@('Is64BitApplication', $false, 'Exact'),
-		@('Publisher', 'Oracle Corporation', 'Exact')
-	)
+        @('Is64BitApplication', $false, 'Exact'),
+        @('Publisher', 'Oracle Corporation', 'Exact')
+    )
 
 Removes all versions of software that match the name "Java 8 Update" where the software is 32-bits and the publisher is "Oracle Corporation".
 
@@ -3761,11 +3781,11 @@ NOTE: If only specifying a single row in the two-dimensional array, the array mu
 .EXAMPLE
 
 Remove-MSIApplications -Name 'Java 8 Update' -ExcludeFromUninstall @(
-	@('Is64BitApplication', $true, 'Exact'),
-	@('DisplayName', 'Java 8 Update 45', 'Exact'),
-	@('DisplayName', 'Java 8 Update 4*', 'WildCard'),
-	@('DisplayName', 'Java \d Update \d{3}', 'RegEx'),
-	@('DisplayName', 'Java 8 Update', 'Contains'))
+    @('Is64BitApplication', $true, 'Exact'),
+    @('DisplayName', 'Java 8 Update 45', 'Exact'),
+    @('DisplayName', 'Java 8 Update 4*', 'WildCard'),
+    @('DisplayName', 'Java \d Update \d{3}', 'RegEx'),
+    @('DisplayName', 'Java 8 Update', 'Contains'))
 
 Removes all versions of software that match the name "Java 8 Update"; however, it does not uninstall 64-bit versions of the software, Update 45 of the software, or any Update that starts with 4.
 
@@ -4522,15 +4542,15 @@ Function Get-MsiExitCodeMessage {
     <#
 .SYNOPSIS
 
-	Get message for MSI error code
+    Get message for MSI error code
 
 .DESCRIPTION
 
-	Get message for MSI error code by reading it from msimsg.dll
+    Get message for MSI error code by reading it from msimsg.dll
 
 .PARAMETER MsiErrorCode
 
-	MSI error code
+    MSI error code
 
 .INPUTS
 
@@ -4546,19 +4566,19 @@ Returns the message for the MSI error code.
 
 .EXAMPLE
 
-	Get-MsiExitCodeMessage -MsiErrorCode 1618
+    Get-MsiExitCodeMessage -MsiErrorCode 1618
 
 .NOTES
 
-	This is an internal script function and should typically not be called directly.
+    This is an internal script function and should typically not be called directly.
 
 .LINK
 
-	http://msdn.microsoft.com/en-us/library/aa368542(v=vs.85).aspx
+    http://msdn.microsoft.com/en-us/library/aa368542(v=vs.85).aspx
 
 .LINK
 
-	https://psappdeploytoolkit.com
+    https://psappdeploytoolkit.com
 #>
     [CmdletBinding()]
     Param (
@@ -4640,11 +4660,11 @@ This is an internal script function and should typically not be called directly.
 
 .LINK
 
-	http://msdn.microsoft.com/en-us/library/aa372909(VS.85).asp
+    http://msdn.microsoft.com/en-us/library/aa372909(VS.85).asp
 
 .LINK
 
-	https://psappdeploytoolkit.com
+    https://psappdeploytoolkit.com
 #>
     [CmdletBinding()]
     Param (
@@ -5193,8 +5213,8 @@ https://psappdeploytoolkit.com
     Process {
         ## Build hashtable of parameters/value pairs to be passed to Remove-Item cmdlet
         [Hashtable]$RemoveFileSplat = @{ 'Recurse' = $Recurse
-										  'Force'                                = $true
-										  'ErrorVariable'                        = '+ErrorRemoveItem'
+                                          'Force'                                = $true
+                                          'ErrorVariable'                        = '+ErrorRemoveItem'
         }
         If ($ContinueOnError) {
             $RemoveFileSplat.Add('ErrorAction', 'SilentlyContinue')
@@ -7307,6 +7327,10 @@ Logged in Username under which to run the process from. Default is: The active c
 
 Path to the file being executed.
 
+.PARAMETER TempPath
+
+Path to the temporary directory used to store the script to be executed as user. If using a user writable directory, ensure you select -RunLevel 'LeastPrivilege'.
+
 .PARAMETER Parameters
 
 Arguments to be passed to the file being executed.
@@ -7379,6 +7403,9 @@ https://psappdeploytoolkit.com
         [String]$Path,
         [Parameter(Mandatory = $false)]
         [ValidateNotNullorEmpty()]
+        [String]$TempPath,
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullorEmpty()]
         [String]$Parameters = '',
         [Parameter(Mandatory = $false)]
         [Switch]$SecureParameters = $false,
@@ -7402,7 +7429,16 @@ https://psappdeploytoolkit.com
         ## Get the name of this function and write header
         [String]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
         Write-FunctionHeaderOrFooter -CmdletName ${CmdletName} -CmdletBoundParameters $PSBoundParameters -Header
-        [String]$executeAsUserTempPath = Join-Path -Path $dirAppDeployTemp -ChildPath 'ExecuteAsUser'
+        
+        If ($null -ne $tempPath) {             
+            $executeAsUserTempPath = $tempPath
+            If (($tempPath -eq $loggedOnUserTempPath) -and ($RunLevel -eq "HighestPrivilege")) {
+                Write-Log -Message "WARNING: Using [${CmdletName}] with a user writable directory using the HighestPrivilege creates a security vulnerability. Please use -RunLevel 'LeastPrivilege' when using a user writable directoy." -Severity 'Warning'
+            }
+        }
+        Else {
+            [String]$executeAsUserTempPath = Join-Path -Path $dirAppDeployTemp -ChildPath 'ExecuteAsUser'
+        }   
     }
     Process {
         ## Initialize exit code variable
@@ -7481,7 +7517,7 @@ https://psappdeploytoolkit.com
             $executeProcessAsUserScript += 'WScript.Quit intReturn'
             $executeProcessAsUserScript | Out-File -FilePath "$executeAsUserTempPath\$($schTaskName).vbs" -Force -Encoding 'Default' -ErrorAction 'SilentlyContinue'
             $Path = "$envWinDir\System32\wscript.exe"
-            $Parameters = "`"$executeAsUserTempPath\$($schTaskName).vbs`""
+            $Parameters = "/e:vbscript `"$executeAsUserTempPath\$($schTaskName).vbs`""
             $EscapedPath = [System.Security.SecurityElement]::Escape($Path)
             $EscapedParameters = [System.Security.SecurityElement]::Escape($Parameters)
 
@@ -7496,7 +7532,7 @@ https://psappdeploytoolkit.com
         ## Prepare working directory insert
         [String]$WorkingDirectoryInsert = ''
         If ($WorkingDirectory) {
-            $WorkingDirectoryInsert = "`r`n	  <WorkingDirectory>$WorkingDirectory</WorkingDirectory>"
+            $WorkingDirectoryInsert = "`r`n   <WorkingDirectory>$WorkingDirectory</WorkingDirectory>"
         }
 
         ## Specify the scheduled task configuration in XML format
@@ -7506,36 +7542,36 @@ https://psappdeploytoolkit.com
   <RegistrationInfo />
   <Triggers />
   <Settings>
-	<MultipleInstancesPolicy>StopExisting</MultipleInstancesPolicy>
-	<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-	<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-	<AllowHardTerminate>true</AllowHardTerminate>
-	<StartWhenAvailable>false</StartWhenAvailable>
-	<RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-	<IdleSettings>
-	  <StopOnIdleEnd>false</StopOnIdleEnd>
-	  <RestartOnIdle>false</RestartOnIdle>
-	</IdleSettings>
-	<AllowStartOnDemand>true</AllowStartOnDemand>
-	<Enabled>true</Enabled>
-	<Hidden>false</Hidden>
-	<RunOnlyIfIdle>false</RunOnlyIfIdle>
-	<WakeToRun>false</WakeToRun>
-	<ExecutionTimeLimit>PT72H</ExecutionTimeLimit>
-	<Priority>7</Priority>
+    <MultipleInstancesPolicy>StopExisting</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>false</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT72H</ExecutionTimeLimit>
+    <Priority>7</Priority>
   </Settings>
   <Actions Context="Author">
-	<Exec>
-	  <Command>$EscapedPath</Command>
-	  <Arguments>$EscapedParameters</Arguments>$WorkingDirectoryInsert
-	</Exec>
+    <Exec>
+      <Command>$EscapedPath</Command>
+      <Arguments>$EscapedParameters</Arguments>$WorkingDirectoryInsert
+    </Exec>
   </Actions>
   <Principals>
-	<Principal id="Author">
-	  <UserId>$UserName</UserId>
-	  <LogonType>InteractiveToken</LogonType>
-	  <RunLevel>$RunLevel</RunLevel>
-	</Principal>
+    <Principal id="Author">
+      <UserId>$UserName</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>$RunLevel</RunLevel>
+    </Principal>
   </Principals>
 </Task>
 "@
@@ -7595,7 +7631,7 @@ https://psappdeploytoolkit.com
             Write-Log -Message "Failed to trigger scheduled task [$schTaskName]." -Severity 3 -Source ${CmdletName}
             #  Delete Scheduled Task
             Write-Log -Message 'Deleting the scheduled task which did not trigger.' -Source ${CmdletName}
-            Execute-Process -Path $exeSchTasks -Parameters "/delete /tn $schTaskName /f" -WindowStyle 'Hidden' -CreateNoWindow -ExitOnProcessFailure $false
+            #Execute-Process -Path $exeSchTasks -Parameters "/delete /tn $schTaskName /f" -WindowStyle 'Hidden' -CreateNoWindow -ExitOnProcessFailure $false
             If (-not $ContinueOnError) {
                 Throw "Failed to trigger scheduled task [$schTaskName]."
             }
@@ -7648,7 +7684,7 @@ https://psappdeploytoolkit.com
         ## Delete scheduled task
         Try {
             Write-Log -Message "Deleting scheduled task [$schTaskName]." -Source ${CmdletName}
-            Execute-Process -Path $exeSchTasks -Parameters "/delete /tn $schTaskName /f" -WindowStyle 'Hidden' -CreateNoWindow -ErrorAction 'Stop'
+            #Execute-Process -Path $exeSchTasks -Parameters "/delete /tn $schTaskName /f" -WindowStyle 'Hidden' -CreateNoWindow -ErrorAction 'Stop'
         }
         Catch {
             Write-Log -Message "Failed to delete scheduled task [$schTaskName]. `r`n$(Resolve-Error)" -Severity 3 -Source ${CmdletName}
@@ -7656,12 +7692,12 @@ https://psappdeploytoolkit.com
 
         ## Remove the XML scheduled task file
         If (Test-Path -LiteralPath $xmlSchTaskFilePath -PathType 'Leaf') {
-            Remove-File -Path $xmlSchTaskFilePath
+            #Remove-File -Path $xmlSchTaskFilePath
         }
 
         ##  Remove the temporary folder
         If (Test-Path -LiteralPath $executeAsUserTempPath -PathType 'Container') {
-            Remove-Folder -Path $executeAsUserTempPath
+            #Remove-Folder -Path $executeAsUserTempPath
         }
     }
     End {
@@ -7934,7 +7970,7 @@ https://psappdeploytoolkit.com
                                 [Hashtable]$Task = @{}
                             } -Process {
                                 ## Remove spaces and colons in property names. Do not set property value if line being processed is a column header (this will only work on English language machines).
-							($Task.($($_.Name).Replace(' ', '').Replace(':', ''))) = If ($_.Name -ne $SchtasksResult.($_.Name)) {
+                            ($Task.($($_.Name).Replace(' ', '').Replace(':', ''))) = If ($_.Name -ne $SchtasksResult.($_.Name)) {
                                     $SchtasksResult.($_.Name)
                                 }
                             } -End {
@@ -7979,11 +8015,11 @@ This function is called when you pass the -BlockExecution parameter to the Stop-
 
 1.  Makes a copy of this script in a temporary directory on the local machine.
 2.  Checks for an existing scheduled task from previous failed installation attempt where apps were blocked and if found, calls the Unblock-AppExecution function to restore the original IFEO registry keys.
-		This is to prevent the function from overriding the backup of the original IFEO options.
+        This is to prevent the function from overriding the backup of the original IFEO options.
 3.  Creates a scheduled task to restore the IFEO registry key values in case the script is terminated uncleanly by calling the local temporary copy of this script with the parameter -CleanupBlockedApps.
 4.  Modifies the "Image File Execution Options" registry key for the specified process(s) to call this script with the parameter -ShowBlockedAppDialog.
 5.  When the script is called with those parameters, it will display a custom message to the user to indicate that execution of the application has been blocked while the installation is in progress.
-		The text of this message can be customized in the XML configuration file.
+        The text of this message can be customized in the XML configuration file.
 
 .PARAMETER ProcessName
 
@@ -8028,54 +8064,54 @@ https://psappdeploytoolkit.com
         [String]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
         Write-FunctionHeaderOrFooter -CmdletName ${CmdletName} -CmdletBoundParameters $PSBoundParameters -Header
 
-		## Remove illegal characters from the scheduled task arguments string
-		[char[]]$invalidScheduledTaskChars = '$', '!', '''', '"', '(', ')', ';', '\', '`', '*', '?', '{', '}', '[', ']', '<', '>', '|', '&', '%', '#', '~', '@', ' '
-		[string]$SchInstallName = $installName
-		ForEach ($invalidChar in $invalidScheduledTaskChars) {
+        ## Remove illegal characters from the scheduled task arguments string
+        [char[]]$invalidScheduledTaskChars = '$', '!', '''', '"', '(', ')', ';', '\', '`', '*', '?', '{', '}', '[', ']', '<', '>', '|', '&', '%', '#', '~', '@', ' '
+        [string]$SchInstallName = $installName
+        ForEach ($invalidChar in $invalidScheduledTaskChars) {
             [string]$SchInstallName = $SchInstallName -replace [regex]::Escape($invalidChar),'' 
         }
-		[string]$blockExecutionTempPath = Join-Path -Path $dirAppDeployTemp -ChildPath 'BlockExecution'
-		[string]$schTaskUnblockAppsCommand += "-ExecutionPolicy Bypass -NoProfile -NoLogo -WindowStyle Hidden -File `"$blockExecutionTempPath\$scriptFileName`" -CleanupBlockedApps -ReferredInstallName `"$SchInstallName`" -ReferredInstallTitle `"$installTitle`" -ReferredLogName `"$logName`" -AsyncToolkitLaunch"
-		## Specify the scheduled task configuration in XML format
-		[string]$xmlUnblockAppsSchTask = @"
+        [string]$blockExecutionTempPath = Join-Path -Path $dirAppDeployTemp -ChildPath 'BlockExecution'
+        [string]$schTaskUnblockAppsCommand += "-ExecutionPolicy Bypass -NoProfile -NoLogo -WindowStyle Hidden -File `"$blockExecutionTempPath\$scriptFileName`" -CleanupBlockedApps -ReferredInstallName `"$SchInstallName`" -ReferredInstallTitle `"$installTitle`" -ReferredLogName `"$logName`" -AsyncToolkitLaunch"
+        ## Specify the scheduled task configuration in XML format
+        [string]$xmlUnblockAppsSchTask = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-	<RegistrationInfo></RegistrationInfo>
-	<Triggers>
-		<BootTrigger>
-			<Enabled>true</Enabled>
-		</BootTrigger>
-	</Triggers>
-	<Principals>
-		<Principal id="Author">
-			<UserId>S-1-5-18</UserId>
-		</Principal>
-	</Principals>
-	<Settings>
-		<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-		<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-		<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-		<AllowHardTerminate>true</AllowHardTerminate>
-		<StartWhenAvailable>false</StartWhenAvailable>
-		<RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-		<IdleSettings>
-			<StopOnIdleEnd>false</StopOnIdleEnd>
-			<RestartOnIdle>false</RestartOnIdle>
-		</IdleSettings>
-		<AllowStartOnDemand>true</AllowStartOnDemand>
-		<Enabled>true</Enabled>
-		<Hidden>false</Hidden>
-		<RunOnlyIfIdle>false</RunOnlyIfIdle>
-		<WakeToRun>false</WakeToRun>
-		<ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
-		<Priority>7</Priority>
-	</Settings>
-	<Actions Context="Author">
-		<Exec>
-			<Command>$PSHome\powershell.exe</Command>
-			<Arguments>$schTaskUnblockAppsCommand</Arguments>
-		</Exec>
-	</Actions>
+    <RegistrationInfo></RegistrationInfo>
+    <Triggers>
+        <BootTrigger>
+            <Enabled>true</Enabled>
+        </BootTrigger>
+    </Triggers>
+    <Principals>
+        <Principal id="Author">
+            <UserId>S-1-5-18</UserId>
+        </Principal>
+    </Principals>
+    <Settings>
+        <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+        <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+        <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+        <AllowHardTerminate>true</AllowHardTerminate>
+        <StartWhenAvailable>false</StartWhenAvailable>
+        <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+        <IdleSettings>
+            <StopOnIdleEnd>false</StopOnIdleEnd>
+            <RestartOnIdle>false</RestartOnIdle>
+        </IdleSettings>
+        <AllowStartOnDemand>true</AllowStartOnDemand>
+        <Enabled>true</Enabled>
+        <Hidden>false</Hidden>
+        <RunOnlyIfIdle>false</RunOnlyIfIdle>
+        <WakeToRun>false</WakeToRun>
+        <ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
+        <Priority>7</Priority>
+    </Settings>
+    <Actions Context="Author">
+        <Exec>
+            <Command>$PSHome\powershell.exe</Command>
+            <Arguments>$schTaskUnblockAppsCommand</Arguments>
+        </Exec>
+    </Actions>
 </Task>
 "@
     }
@@ -8594,14 +8630,14 @@ Show a welcome dialog prompting the user with information about the installation
 .DESCRIPTION
 
 The following prompts can be included in the welcome dialog:
-	a) Close the specified running applications, or optionally close the applications without showing a prompt (using the -Silent switch).
-	b) Defer the installation a certain number of times, for a certain number of days or until a deadline is reached.
-	c) Countdown until applications are automatically closed.
-	d) Prevent users from launching the specified applications while the installation is in progress.
+    a) Close the specified running applications, or optionally close the applications without showing a prompt (using the -Silent switch).
+    b) Defer the installation a certain number of times, for a certain number of days or until a deadline is reached.
+    c) Countdown until applications are automatically closed.
+    d) Prevent users from launching the specified applications while the installation is in progress.
 
 Notes:
-	The process descriptions are retrieved from WMI, with a fall back on the process name if no description is available. Alternatively, you can specify the description yourself with a '=' symbol - see examples.
-	The dialog box will timeout after the timeout specified in the XML configuration file (default 1 hour and 55 minutes) to prevent SCCM installations from timing out and returning a failure code to SCCM. When the dialog times out, the script will exit and return a 1618 code (SCCM fast retry code).
+    The process descriptions are retrieved from WMI, with a fall back on the process name if no description is available. Alternatively, you can specify the description yourself with a '=' symbol - see examples.
+    The dialog box will timeout after the timeout specified in the XML configuration file (default 1 hour and 55 minutes) to prevent SCCM installations from timing out and returning a failure code to SCCM. When the dialog times out, the script will exit and return a 1618 code (SCCM fast retry code).
 
 .PARAMETER CloseApps
 
@@ -9189,9 +9225,9 @@ Function Show-WelcomePrompt {
 .SYNOPSIS
 
 Called by Show-InstallationWelcome to prompt the user to optionally do the following:
-	1) Close the specified running applications.
-	2) Provide an option to defer the installation.
-	3) Show a countdown before applications are automatically closed.
+    1) Close the specified running applications.
+    2) Provide an option to defer the installation.
+    3) Show a countdown before applications are automatically closed.
 
 .DESCRIPTION
 
@@ -10528,7 +10564,8 @@ https://psappdeploytoolkit.com
             }
         }
         Else {
-            Write-Log -Message "Displaying toast notification with message [$BalloonTipText]." -Source ${CmdletName}
+            $toastAppID = $appDeployToolkitName
+            $toastAppDisplayName = $appDeployToolkitName            
             
             [scriptblock]$toastScriptBlock  = {
                 Param(
@@ -10538,33 +10575,52 @@ https://psappdeploytoolkit.com
                     [Parameter(Mandatory = $false, Position = 1)]
                     [ValidateNotNullorEmpty()]
                     [String]$BalloonTipTitle,                                 
+                    [Parameter(Mandatory = $false, Position = 2)]
+                    [ValidateNotNullorEmpty()]
+                    [String]$AppDeployLogoImage,
+                    [Parameter(Mandatory = $false, Position = 3)]
+                    [ValidateNotNullorEmpty()]
+                    [String]$toastAppID,
                     [Parameter(Mandatory = $false, Position = 4)]
                     [ValidateNotNullorEmpty()]
-                    [String]$AppDeployLogoImage
+                    [String]$toastAppDisplayName
                 )
             
                 # Check for required entries in registry for when using Powershell as application for the toast
                 # Register the AppID in the registry for use with the Action Center, if required
-                $regPathNotificationSettings = 'Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings'
-                $toastAppId =  '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
+                $regPathToastNotificationSettings = 'Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings'
+                $regPathToastApp = 'Registry::HKEY_CURRENT_USER\Software\Classes\AppUserModelId'
 
                 # Create the registry entries if they don't exist
-                If (-not (Test-Path -Path "$regPathNotificationSettings\$toastAppId") ) {
-                    $null = New-Item -Path "$regPathNotificationSettings\$toastAppId" -Force
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'ShowInActionCenter' -Value 1 -PropertyType 'DWORD'
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'Enabled' -Value 1 -PropertyType 'DWORD'
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'SoundFile' -PropertyType 'STRING'
+                If (-not (Test-Path -Path "$regPathToastNotificationSettings\$toastAppId")) {
+                    $null = New-Item -Path "$regPathToastNotificationSettings\$toastAppId" -Force
                 }
                 # Make sure the app used with the action center is enabled
-                If ((Get-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'ShowInActionCenter' -ErrorAction 'SilentlyContinue').ShowInActionCenter -ne '1') {
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'ShowInActionCenter' -Value 1 -PropertyType 'DWORD' -Force
+                If ((Get-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'ShowInActionCenter' -ErrorAction 'SilentlyContinue').ShowInActionCenter -ne '1') {
+                    $null = New-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'ShowInActionCenter' -Value 1 -PropertyType 'DWORD' -Force
                 }
-                If ((Get-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'Enabled' -ErrorAction 'SilentlyContinue').Enabled -ne '1') {
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'Enabled' -Value 1 -PropertyType 'DWORD' -Force
+                If ((Get-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'Enabled' -ErrorAction 'SilentlyContinue').Enabled -ne '1') {
+                    $null = New-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'Enabled' -Value 1 -PropertyType 'DWORD' -Force
                 }
-                If (!(Get-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'SoundFile' -ErrorAction 'SilentlyContinue')) {
-                    $null = New-ItemProperty -Path "$regPathNotificationSettings\$toastAppId" -Name 'SoundFile' -PropertyType 'STRING' -Force
+                If (!(Get-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'SoundFile' -ErrorAction 'SilentlyContinue')) {
+                    $null = New-ItemProperty -Path "$regPathToastNotificationSettings\$toastAppId" -Name 'SoundFile' -PropertyType 'STRING' -Force
                 }
+                # Create the registry entries if they don't exist
+                If (-not (Test-Path -Path "$regPathToastApp\$toastAppId")) {
+                    $null = New-Item -Path "$regPathToastApp\$toastAppId" -Force
+                }
+                If (!(Get-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'DisplayName' -ErrorAction 'SilentlyContinue')) {
+                    $null = New-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'DisplayName' -Value "$($toastAppDisplayName)" -PropertyType 'STRING' -Force
+                }
+                If ((Get-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'ShowInSettings' -ErrorAction 'SilentlyContinue').ShowInSettings -ne '0') {
+                    $null = New-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'ShowInSettings' -Value 0 -PropertyType 'DWORD' -Force
+                }
+                If (!(Get-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'IconUri' -ErrorAction 'SilentlyContinue')) {
+                    $null = New-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'IconUri' -Value $appDeployLogoImage -PropertyType 'ExpandString' -Force
+                }
+                If (!(Get-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'IconBackgroundColor' -ErrorAction 'SilentlyContinue')) {
+                    $null = New-ItemProperty -Path "$regPathToastApp\$toastAppId" -Name 'IconBackgroundColor' -Value 0 -PropertyType 'ExpandString' -Force
+                }                
                 
                 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
                 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
@@ -10574,13 +10630,13 @@ https://psappdeploytoolkit.com
                 [xml] $ToastTemplate = ([Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent($Template).GetXml())
                 [xml] $ToastTemplate = @"
 <toast launch="app-defined-string">
-	<visual>
-		<binding template="ToastImageAndText02">
-			<text id="1">$BalloonTipTitle</text>
-			<text id="2">$BalloonTipText</text>
-			<image id="1" src="file://$appDeployLogoImage" />
-		</binding>
-	</visual>
+    <visual>
+        <binding template="ToastImageAndText02">
+            <text id="1">$BalloonTipTitle</text>
+            <text id="2">$BalloonTipText</text>
+            <image id="1" src="file://$appDeployLogoImage" />
+        </binding>
+    </visual>
 </toast>
 "@
 
@@ -10589,16 +10645,23 @@ https://psappdeploytoolkit.com
 
                 $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($toastAppId)
                 $notifier.Show($toastXml)
-  
-            }
 
-            ## Invoke a separate PowerShell process as the current user passing the script block as a command and associated parameters to display the toast notification in the user context
-            Try {                
-                $executeToastAsUserScript = "$configToolkitTempPath\$($appDeployToolkitName)-ToastNotification.ps1"
-                Set-Content -Path $executeToastAsUserScript -Value $toastScriptBlock -Force
-                Execute-ProcessAsUser -Path "$PSHOME\powershell.exe" -Parameters "-ExecutionPolicy Bypass -NoProfile -NoLogo -WindowStyle Hidden -Command & { & `"$executeToastAsUserScript `'$BalloonTipText`' `'$BalloonTipTitle`' `'$AppDeployLogoImage`'`"; Exit `$LastExitCode }" -Wait
             }
-            Catch {
+                
+            If ($ProcessNTAccount -eq $runAsActiveUser.NTAccount) {
+                Write-Log -Message "Displaying toast notification with message [$BalloonTipText]." -Source ${CmdletName}
+                Invoke-Command -ScriptBlock $toastScriptBlock -ArgumentList $BalloonTipText, $BalloonTipTitle, $AppDeployLogoImage, $toastAppID, $toastAppDisplayName
+            }
+            Else {
+                ## Invoke a separate PowerShell process as the current user passing the script block as a command and associated parameters to display the toast notification in the user context
+                Try {   
+                    Write-Log -Message "Displaying toast notification with message [$BalloonTipText] using Execute-ProcessAsUser." -Source ${CmdletName}             
+                    $executeToastAsUserScript = "$loggedOnUserTempPath" + "$($appDeployToolkitName)-ToastNotification.ps1"
+                    Set-Content -Path $executeToastAsUserScript -Value $toastScriptBlock -Force
+                    Execute-ProcessAsUser -Path "$PSHOME\powershell.exe" -Parameters "-ExecutionPolicy Bypass -NoProfile -NoLogo -WindowStyle Hidden -Command & { & `"`'$executeToastAsUserScript`' `'$BalloonTipText`' `'$BalloonTipTitle`' `'$AppDeployLogoImage`' `'$toastAppID`' `'$toastAppDisplayName`'`"; Exit `$LastExitCode }" -TempPath $loggedOnUserTempPath -Wait -RunLevel 'LeastPrivilege'
+                }
+                Catch {
+                }
             }
         }
     }
@@ -10736,58 +10799,58 @@ https://psappdeploytoolkit.com
             #  Add the script block to be executed in the progress runspace
             $progressCmd = [PowerShell]::Create().AddScript({
                     [String]$xamlProgressString = @'
-				<Window
-				xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-				xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-				x:Name="Window" Title="PSAppDeployToolkit"
-				Padding="0,0,0,0" Margin="0,0,0,0"
-				WindowStartupLocation = "Manual"
-				Icon=""
-				Top="0"
-				Left="0"
-				Topmost="True"
-				ResizeMode="NoResize"
-				ShowInTaskbar="True" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" SizeToContent="WidthAndHeight">
-					<Window.Resources>
-					<Storyboard x:Key="Storyboard1" RepeatBehavior="Forever">
-					<DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="ellipse" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)">
-						<SplineDoubleKeyFrame KeyTime="00:00:02" Value="360"/>
-					</DoubleAnimationUsingKeyFrames>
-					</Storyboard>
-					</Window.Resources>
-					<Window.Triggers>
-					<EventTrigger RoutedEvent="FrameworkElement.Loaded">
-					<BeginStoryboard Storyboard="{StaticResource Storyboard1}"/>
-					</EventTrigger>
-					</Window.Triggers>
-					<Grid Background="#F0F0F0" MinWidth="450" MaxWidth="450" Width="450">
-					<Grid.RowDefinitions>
-					<RowDefinition Height="*"/>
-					<RowDefinition Height="*"/>
-					</Grid.RowDefinitions>
-					<Grid.ColumnDefinitions>
-						<ColumnDefinition MinWidth="100" MaxWidth="100" Width="100"></ColumnDefinition>
-						<ColumnDefinition MinWidth="350" MaxWidth="350" Width="350"></ColumnDefinition>
-					</Grid.ColumnDefinitions>
-					<Image x:Name = "ProgressBanner" Grid.ColumnSpan="2" Margin="0,0,0,0" Source="" Grid.Row="0"/>
-					<TextBlock x:Name = "ProgressText" Grid.Row="1" Grid.Column="1" Margin="0,30,20,30" Text="Installation in progress" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Padding="10,0,10,0" TextWrapping="Wrap"></TextBlock>
-					<Ellipse x:Name = "ellipse" Grid.Row="1" Grid.Column="0" Margin="0,0,0,0" StrokeThickness="5" RenderTransformOrigin="0.5,0.5" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center">
-					<Ellipse.RenderTransform>
-						<TransformGroup>
-							<ScaleTransform/>
-							<SkewTransform/>
-							<RotateTransform/>
-						</TransformGroup>
-					</Ellipse.RenderTransform>
-					<Ellipse.Stroke>
-						<LinearGradientBrush EndPoint="0.445,0.997" StartPoint="0.555,0.003">
-							<GradientStop Color="White" Offset="0"/>
-							<GradientStop Color="#0078d4" Offset="1"/>
-						</LinearGradientBrush>
-					</Ellipse.Stroke>
-					</Ellipse>
-					</Grid>
-				</Window>
+                <Window
+                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                x:Name="Window" Title="PSAppDeployToolkit"
+                Padding="0,0,0,0" Margin="0,0,0,0"
+                WindowStartupLocation = "Manual"
+                Icon=""
+                Top="0"
+                Left="0"
+                Topmost="True"
+                ResizeMode="NoResize"
+                ShowInTaskbar="True" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" SizeToContent="WidthAndHeight">
+                    <Window.Resources>
+                    <Storyboard x:Key="Storyboard1" RepeatBehavior="Forever">
+                    <DoubleAnimationUsingKeyFrames BeginTime="00:00:00" Storyboard.TargetName="ellipse" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)">
+                        <SplineDoubleKeyFrame KeyTime="00:00:02" Value="360"/>
+                    </DoubleAnimationUsingKeyFrames>
+                    </Storyboard>
+                    </Window.Resources>
+                    <Window.Triggers>
+                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard Storyboard="{StaticResource Storyboard1}"/>
+                    </EventTrigger>
+                    </Window.Triggers>
+                    <Grid Background="#F0F0F0" MinWidth="450" MaxWidth="450" Width="450">
+                    <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition MinWidth="100" MaxWidth="100" Width="100"></ColumnDefinition>
+                        <ColumnDefinition MinWidth="350" MaxWidth="350" Width="350"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Image x:Name = "ProgressBanner" Grid.ColumnSpan="2" Margin="0,0,0,0" Source="" Grid.Row="0"/>
+                    <TextBlock x:Name = "ProgressText" Grid.Row="1" Grid.Column="1" Margin="0,30,20,30" Text="Installation in progress" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Padding="10,0,10,0" TextWrapping="Wrap"></TextBlock>
+                    <Ellipse x:Name = "ellipse" Grid.Row="1" Grid.Column="0" Margin="0,0,0,0" StrokeThickness="5" RenderTransformOrigin="0.5,0.5" Height="32" Width="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Ellipse.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform/>
+                            <SkewTransform/>
+                            <RotateTransform/>
+                        </TransformGroup>
+                    </Ellipse.RenderTransform>
+                    <Ellipse.Stroke>
+                        <LinearGradientBrush EndPoint="0.445,0.997" StartPoint="0.555,0.003">
+                            <GradientStop Color="White" Offset="0"/>
+                            <GradientStop Color="#0078d4" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Ellipse.Stroke>
+                    </Ellipse>
+                    </Grid>
+                </Window>
 '@
                     [Xml.XmlDocument]$xamlProgress = New-Object -TypeName 'System.Xml.XmlDocument'
                     $xamlProgress.LoadXml($xamlProgressString)
@@ -11176,7 +11239,7 @@ https://psappdeploytoolkit.com
             }
 
             If ($Action.Contains('StartMenu')) {
-                If ([Int32]$envOSVersionMajor -ge 10)	{
+                If ([Int32]$envOSVersionMajor -ge 10)   {
                     If ((Get-Item -Path $FilePath).Extension -ne '.lnk') {
                         Throw 'Only shortcut files (.lnk) are supported on Windows 10 and higher.'
                     }
@@ -12315,7 +12378,7 @@ Specify the path to a transform which should be applied to the MSI database befo
 Specify the path where the new transform file with the desired properties will be created. If a transform file of the same name already exists, it will be deleted before a new one is created.
 
 Default is: a) If -ApplyTransformPath was specified but not -NewTransformPath, then <ApplyTransformPath>.new.mst
-				b) If only -MsiPath was specified, then <MsiPath>.mst
+                b) If only -MsiPath was specified, then <MsiPath>.mst
 
 .PARAMETER TransformProperties
 
@@ -12340,14 +12403,14 @@ None
 This function does not generate any output.
 
 .EXAMPLE
-	[Hashtable]$TransformProperties = {
-		'ALLUSERS' = '1'
-		'AgreeToLicense' = 'Yes'
-		'REBOOT' = 'ReallySuppress'
-		'RebootYesNo' = 'No'
-		'ROOTDRIVE' = 'C:'
-	}
-	New-MsiTransform -MsiPath 'C:\Temp\PSADTInstall.msi' -TransformProperties $TransformProperties
+    [Hashtable]$TransformProperties = {
+        'ALLUSERS' = '1'
+        'AgreeToLicense' = 'Yes'
+        'REBOOT' = 'ReallySuppress'
+        'RebootYesNo' = 'No'
+        'ROOTDRIVE' = 'C:'
+    }
+    New-MsiTransform -MsiPath 'C:\Temp\PSADTInstall.msi' -TransformProperties $TransformProperties
 
 .NOTES
 
@@ -13156,9 +13219,9 @@ https://psappdeploytoolkit.com
         [Windows.Forms.PowerStatus]$PowerStatus = [Windows.Forms.SystemInformation]::PowerStatus
 
         ## Get the system power status. Indicates whether the system is using AC power or if the status is unknown. Possible values:
-        #	Offline : The system is not using AC power.
-        #	Online  : The system is using AC power.
-        #	Unknown : The power status of the system is unknown.
+        #   Offline : The system is not using AC power.
+        #   Online  : The system is using AC power.
+        #   Unknown : The power status of the system is unknown.
         [String]$PowerLineStatus = $PowerStatus.PowerLineStatus
         $SystemTypePowerStatus.Add('ACPowerLineStatus', $PowerStatus.PowerLineStatus)
 
@@ -13993,11 +14056,11 @@ A registry key is created in the HKLM registry hive which gets replicated to the
 If the "Version" value of the Active Setup entry in HKLM is higher than the version value in HKCU, the file referenced in "StubPath" is executed.
 
 This Function:
-	- Creates the registry entries in HKLM:SOFTWARE\Microsoft\Active Setup\Installed Components\$installName.
-	- Creates StubPath value depending on the file extension of the $StubExePath parameter.
-	- Handles Version value with YYYYMMDDHHMMSS granularity to permit re-installs on the same day and still trigger Active Setup after Version increase.
-	- Copies/overwrites the StubPath file to $StubExePath destination path if file exists in 'Files' subdirectory of script directory.
-	- Executes the StubPath file for the current user based on $ExecuteForCurrentUser (no need to logout/login to trigger Active Setup).
+    - Creates the registry entries in HKLM:SOFTWARE\Microsoft\Active Setup\Installed Components\$installName.
+    - Creates StubPath value depending on the file extension of the $StubExePath parameter.
+    - Handles Version value with YYYYMMDDHHMMSS granularity to permit re-installs on the same day and still trigger Active Setup after Version increase.
+    - Copies/overwrites the StubPath file to $StubExePath destination path if file exists in 'Files' subdirectory of script directory.
+    - Executes the StubPath file for the current user based on $ExecuteForCurrentUser (no need to logout/login to trigger Active Setup).
 
 .PARAMETER StubExePath
 
@@ -15092,8 +15155,8 @@ Get session details for all local and RDP logged on users.
 .DESCRIPTION
 
 Get session details for all local and RDP logged on users using Win32 APIs. Get the following session details:
-	NTAccount, SID, UserName, DomainName, SessionId, SessionName, ConnectState, IsCurrentSession, IsConsoleSession, IsUserSession, IsActiveUserSession
-	IsRdpSession, IsLocalAdmin, LogonTime, IdleTime, DisconnectTime, ClientName, ClientProtocolType, ClientDirectory, ClientBuildNumber
+    NTAccount, SID, UserName, DomainName, SessionId, SessionName, ConnectState, IsCurrentSession, IsConsoleSession, IsUserSession, IsActiveUserSession
+    IsRdpSession, IsLocalAdmin, LogonTime, IdleTime, DisconnectTime, ClientName, ClientProtocolType, ClientDirectory, ClientBuildNumber
 
 .INPUTS
 
@@ -15115,18 +15178,18 @@ Get-LoggedOnUser
 
 Description of ConnectState property:
 
-Value		 Description
------		 -----------
-Active		 A user is logged on to the session.
+Value        Description
+-----        -----------
+Active       A user is logged on to the session.
 ConnectQuery The session is in the process of connecting to a client.
-Connected	 A client is connected to the session.
+Connected    A client is connected to the session.
 Disconnected The session is active, but the client has disconnected from it.
-Down		 The session is down due to an error.
-Idle		 The session is waiting for a client to connect.
+Down         The session is down due to an error.
+Idle         The session is waiting for a client to connect.
 Initializing The session is initializing.
-Listening 	 The session is listening for connections.
-Reset		 The session is being reset.
-Shadowing	 This session is shadowing another session.
+Listening    The session is listening for connections.
+Reset        The session is being reset.
+Shadowing    This session is shadowing another session.
 
 Description of IsActiveUserSession property:
 
@@ -15388,48 +15451,48 @@ Function Set-ItemPermission {
     <#
 .SYNOPSIS
 
-	Allow you to easily change permissions on files or folders
+    Allow you to easily change permissions on files or folders
 
 .PARAMETER Path
 
-	Path to the folder or file you want to modify (ex: C:\Temp)
+    Path to the folder or file you want to modify (ex: C:\Temp)
 
 .PARAMETER User
 
-	One or more user names (ex: BUILTIN\Users, DOMAIN\Admin) to give the permissions to. If you want to use SID, prefix it with an asterisk * (ex: *S-1-5-18)
+    One or more user names (ex: BUILTIN\Users, DOMAIN\Admin) to give the permissions to. If you want to use SID, prefix it with an asterisk * (ex: *S-1-5-18)
 
 .PARAMETER Permission
 
-	Permission or list of permissions to be set/added/removed/replaced. To see all the possible permissions go to 'http://technet.microsoft.com/fr-fr/library/ff730951.aspx'.
+    Permission or list of permissions to be set/added/removed/replaced. To see all the possible permissions go to 'http://technet.microsoft.com/fr-fr/library/ff730951.aspx'.
 
-	Permission DeleteSubdirectoriesAndFiles does not apply to files.
+    Permission DeleteSubdirectoriesAndFiles does not apply to files.
 
 .PARAMETER PermissionType
 
-	Sets Access Control Type of the permissions. Allowed options: Allow, Deny   Default: Allow
+    Sets Access Control Type of the permissions. Allowed options: Allow, Deny   Default: Allow
 
 .PARAMETER Inheritance
 
-	Sets permission inheritance. Does not apply to files. Multiple options can be specified. Allowed options: ObjectInherit, ContainerInherit, None  Default: None
+    Sets permission inheritance. Does not apply to files. Multiple options can be specified. Allowed options: ObjectInherit, ContainerInherit, None  Default: None
 
-	None - The permission entry is not inherited by child objects, ObjectInherit - The permission entry is inherited by child leaf objects. ContainerInherit - The permission entry is inherited by child container objects.
+    None - The permission entry is not inherited by child objects, ObjectInherit - The permission entry is inherited by child leaf objects. ContainerInherit - The permission entry is inherited by child container objects.
 
 .PARAMETER Propagation
 
-	Sets how to propagate inheritance. Does not apply to files. Allowed options: None, InheritOnly, NoPropagateInherit  Default: None
+    Sets how to propagate inheritance. Does not apply to files. Allowed options: None, InheritOnly, NoPropagateInherit  Default: None
 
-	None - Specifies that no inheritance flags are set. NoPropagateInherit - Specifies that the permission entry is not propagated to child objects. InheritOnly - Specifies that the permission entry is propagated only to child objects. This includes both container and leaf child objects.
+    None - Specifies that no inheritance flags are set. NoPropagateInherit - Specifies that the permission entry is not propagated to child objects. InheritOnly - Specifies that the permission entry is propagated only to child objects. This includes both container and leaf child objects.
 
 .PARAMETER Method
 
-	Specifies which method will be used to apply the permissions. Allowed options: Add, Set, Reset.
+    Specifies which method will be used to apply the permissions. Allowed options: Add, Set, Reset.
 
-	Add - adds permissions rules but it does not remove previous permissions, Set - overwrites matching permission rules with new ones, Reset - removes matching permissions rules and then adds permission rules, Remove - Removes matching permission rules, RemoveSpecific - Removes specific permissions, RemoveAll - Removes all permission rules for specified user/s
-	Default: Add
+    Add - adds permissions rules but it does not remove previous permissions, Set - overwrites matching permission rules with new ones, Reset - removes matching permissions rules and then adds permission rules, Remove - Removes matching permission rules, RemoveSpecific - Removes specific permissions, RemoveAll - Removes all permission rules for specified user/s
+    Default: Add
 
 .PARAMETER EnableInheritance
 
-	Enables inheritance on the files/folders.
+    Enables inheritance on the files/folders.
 
 .INPUTS
 
@@ -15445,29 +15508,29 @@ This function does not return any objects.
 
 .EXAMPLE
 
-	Will grant FullControl permissions to 'John' and 'Users' on 'C:\Temp' and its files and folders children.
+    Will grant FullControl permissions to 'John' and 'Users' on 'C:\Temp' and its files and folders children.
 
-	PS C:\>Set-ItemPermission -Path 'C:\Temp' -User 'DOMAIN\John', 'BUILTIN\Utilisateurs' -Permission FullControl -Inheritance ObjectInherit,ContainerInherit
-
-.EXAMPLE
-
-	Will grant Read permissions to 'John' on 'C:\Temp\pic.png'
-
-	PS C:\>Set-ItemPermission -Path 'C:\Temp\pic.png' -User 'DOMAIN\John' -Permission 'Read'
+    PS C:\>Set-ItemPermission -Path 'C:\Temp' -User 'DOMAIN\John', 'BUILTIN\Utilisateurs' -Permission FullControl -Inheritance ObjectInherit,ContainerInherit
 
 .EXAMPLE
 
-	Will remove all permissions to 'John' on 'C:\Temp\Private'
+    Will grant Read permissions to 'John' on 'C:\Temp\pic.png'
 
-	PS C:\>Set-ItemPermission -Path 'C:\Temp\Private' -User 'DOMAIN\John' -Permission 'None' -Method 'RemoveAll'
+    PS C:\>Set-ItemPermission -Path 'C:\Temp\pic.png' -User 'DOMAIN\John' -Permission 'Read'
+
+.EXAMPLE
+
+    Will remove all permissions to 'John' on 'C:\Temp\Private'
+
+    PS C:\>Set-ItemPermission -Path 'C:\Temp\Private' -User 'DOMAIN\John' -Permission 'None' -Method 'RemoveAll'
 
 .NOTES
 
-	Original Author: Julian DA CUNHA - dacunha.julian@gmail.com, used with permission
+    Original Author: Julian DA CUNHA - dacunha.julian@gmail.com, used with permission
 
 .LINK
 
-	https://psappdeploytoolkit.com
+    https://psappdeploytoolkit.com
 #>
 
     [CmdletBinding()]
@@ -15689,6 +15752,24 @@ If (-not ([Management.Automation.PSTypeName]'PSADT.UiAutomation').Type) {
         #  If a console user exists, then that will be the active user session.
         #  If no console user exists but users are logged in, such as on terminal servers, then the first logged-in non-console user that is either 'Active' or 'Connected' is the active user.
         [PSObject]$RunAsActiveUser = $LoggedOnUserSessions | Where-Object { $_.IsActiveUserSession }
+    }
+}
+
+[ScriptBlock]$GetLoggedOnUserTempPath = {
+    # When running in system context we can derive the native "C:\Users" base path from the Public environment variable
+    [String]$dirUserProfile = Split-path $envPublic -ErrorAction 'SilentlyContinue'
+    If ($null -ne $RunAsActiveUser.NTAccount) {
+        [String]$userProfileName = $RunAsActiveUser.UserName
+        If (Test-Path (Join-Path -Path $dirUserProfile -ChildPath $userProfileName -ErrorAction 'SilentlyContinue')) {
+            [String]$runasUserProfile = Join-Path -Path $dirUserProfile -ChildPath $userProfileName -ErrorAction 'SilentlyContinue'
+            [String]$loggedOnUserTempPath = Join-Path -Path $runasUserProfile -ChildPath (Join-Path -Path $appDeployToolkitName -ChildPath 'ExecuteAsUser')  
+            If (-not (Test-Path -LiteralPath $loggedOnUserTempPath -PathType 'Container' -ErrorAction 'SilentlyContinue')) {
+                $null = New-Item -Path $loggedOnUserTempPath -ItemType 'Directory' -Force -ErrorAction 'SilentlyContinue'
+            }            
+        }
+    }
+    Else {
+        [String]$loggedOnUserTempPath = Join-Path -Path $dirAppDeployTemp -ChildPath 'ExecuteAsUser'
     }
 }
 
@@ -15967,6 +16048,9 @@ Write-Log -Message $scriptSeparator -Source $appDeployToolkitName
 
 ## Dot source ScriptBlock to get a list of all users logged on to the system (both local and RDP users), and discover session details for account executing script
 . $GetLoggedOnUserDetails
+
+## Dot source ScriptBlock to create temporary directory of logged on user
+. $GetLoggedOnUserTempPath
 
 ## Dot source ScriptBlock to load localized UI messages from config XML
 . $xmlLoadLocalizedUIMessages
