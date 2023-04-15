@@ -29,6 +29,7 @@ jobs:
         uses: potatoqualitee/psmodulecache@v5.2
         with:
           modules-to-cache: Evergreen
+          updatable: true
           shell: pwsh
 
       - name: New tmp dir

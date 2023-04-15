@@ -12,7 +12,7 @@ on:
       configuration:
         description: Configuration XML file to include in the package.
         required: true
-        default: M365Apps-MonthlyEnterprise-x64-stealthpuppy.xml
+        default: MonthlyEnterprise-x64.xml
 
 jobs:
   prepare-package:

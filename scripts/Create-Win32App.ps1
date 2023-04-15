@@ -1,4 +1,5 @@
-﻿#Requires -RunAsAdministrator
+﻿#Requires -PSEdition Core
+#Requires -Modules IntuneWin32App
 <#
     .SYNOPSIS
         Create a Win32 app in Microsoft Intune based on input from app manifest file.
@@ -36,10 +37,10 @@ param(
     [System.String] $PackageFile,
 
     [Parameter(Mandatory = $false, HelpMessage = "Specify to validate manifest file configuration.")]
-    [ValidateNotNullOrEmpty()]
     [System.Management.Automation.SwitchParameter] $Validate,
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [System.String] $SetupVersion
 )
 process {

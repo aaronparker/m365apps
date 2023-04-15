@@ -5,12 +5,13 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [System.String] $ConfigurationFile,
-    [System.String] $Version
+    [System.String] $Version,
+    [System.String] $Path = $env:GITHUB_WORKSPACE
 )
 
-Copy-Item -Path "$env:GITHUB_WORKSPACE\scripts\App.json" -Destination "$env:GITHUB_WORKSPACE\scripts\Temp.json"
+Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\scripts\Temp.json"
 
-$AppJson = Get-Content -Path "$env:GITHUB_WORKSPACE\scripts\Temp.json" | ConvertFrom-Json
+$AppJson = Get-Content -Path "$Path\scripts\Temp.json" | ConvertFrom-Json
 $AppJson.PackageInformation.Version = $Version
 
 [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
@@ -40,4 +41,4 @@ if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$Disp
 
 $AppJson.Information.DisplayName = $DisplayName
 $AppJson.Information.Description = $Xml.Configuration.Info.Description
-$AppJson | ConvertTo-Json | Out-File -FilePath "$env:GITHUB_WORKSPACE\scripts\Temp.json" -Force
+$AppJson | ConvertTo-Json | Out-File -FilePath "$Path\scripts\Temp.json" -Force
