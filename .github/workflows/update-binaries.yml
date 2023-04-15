@@ -28,7 +28,7 @@ jobs:
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v5.2
         with:
-          modules-to-cache: Evergreen
+          modules-to-cache: "Evergreen::"
           updatable: true
           shell: pwsh
 
