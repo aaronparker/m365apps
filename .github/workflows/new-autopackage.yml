@@ -12,7 +12,7 @@ on:
       configuration:
         description: Configuration XML file to include in the package.
         required: true
-        default: MonthlyEnterprise-x64.xml
+        default: O365ProPlusVisioProRetailProjectProRetail.xml
 
 jobs:
   prepare-package:
@@ -21,66 +21,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Test for config file
-        id: test-config-file
-        shell: pwsh
+      - name: Test configuration file path
+        id: test-config
+        shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
           Test-Path -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
 
-      - name: Test for IntuneWinAppUtil.exe
-        id: test-intunewin
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Test-Path -Path "${{ github.workspace }}\intunewin\IntuneWinAppUtil.exe"
-
-      - name: Unblock files
-        id: unblock-files
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Get-ChildItem -Path "${{ github.workspace }}" -Recurse -Include *.exe | Unblock-File
-
-      - name: Create directories
-        id: create-dirs
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: |
-          New-Item -Path "${{ github.workspace }}\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-          New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-
-      - name: Copy config file
-        id: copy-config-file
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Copy-Item -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
-
-      - name: Copy setup files
-        id: copy-setup-files
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Copy-Item -Path "${{ github.workspace }}\m365\setup.exe" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\setup.exe"
-          Copy-Item -Path "${{ github.workspace }}\configs\Uninstall-Microsoft365Apps.xml" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
-
-      - name: Create package
+      - name: Create package and import
         id: create-package
-        shell: pwsh
+        shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
-          $PackagePath = "${{ github.workspace }}\PSAppDeployToolkit\Toolkit"
-          $PackageOutput = "${{ github.workspace }}\output"
-          $Setup = "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\setup.exe"
           $params = @{
-              FilePath     = "${{ github.workspace }}\intunewin\IntuneWinAppUtil.exe"
-              ArgumentList = "-c $PackagePath -s $Setup -o $PackageOutput -q"
-              Wait         = $True
-              NoNewWindow  = $True
-              PassThru     = $True
+              Path              = "${{ github.workspace }}"
+              ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+              Channel           = MonthlyEnterprise
+              CompanyName       = stealthpuppy   
+              TenantId          = "${{ secrets.TENANT_ID }}"
+              ClientId          = "${{ secrets.CLIENT_ID }}"
+              ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
+              Import            = $true 
           }
-          Start-Process @params
+          & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
       - name: Copy package
         id: copy-package
@@ -117,80 +80,3 @@ jobs:
           name: m365-package-${{ steps.release.outputs.release }}
           path: |
             ${{ github.workspace }}/packages/${{ steps.release.outputs.release }}/*
-
-  add-application:
-    needs: prepare-package
-    runs-on: windows-latest
-
-    # Steps here need to run in Windows PowerShell due to module requirements
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/download-artifact@v3
-        id: download
-        with:
-          path: artifacts
-
-      - name: Extract artifacts
-        id: extract
-        shell: powershell
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Get-ChildItem -Path "${{steps.download.outputs.download-path}}" -Include *.zip -Recurse | `
-          ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath "${{steps.download.outputs.download-path}}" -Force }
-          
-          Get-ChildItem -Path "${{steps.download.outputs.download-path}}" -Include *.intunewin -Recurse | `
-          ForEach-Object { Write-Output -InputObject $_.FullName; echo "::set-output name=intunewin-path::$($_.FullName)" }
-
-          Get-ChildItem -Path "${{steps.download.outputs.download-path}}" -Include *.xml -Recurse | `
-          ForEach-Object { Write-Output -InputObject $_.FullName; echo "::set-output name=xml-path::$($_.FullName)" }
-
-      - name: Install and cache PowerShell modules
-        id: psmodulecache
-        uses: potatoqualitee/psmodulecache@v5.2
-        with:
-          modules-to-cache: "MSAL.PS::, PSIntuneAuth::, AzureAD::, IntuneWin32App::, Microsoft.Graph.Intune::"
-          updatable: true
-          shell: powershell
-
-      # Get version number from setup.exe
-      - name: Get setup.exe version
-        id: get-setup
-        shell: powershell
-        working-directory: "${{ github.workspace }}"
-        run: |
-          $SetupVersion = (Get-Item -Path "${{ github.workspace }}\m365\setup.exe").VersionInfo.FileVersion
-          echo "::set-output name=version::$($SetupVersion)"
-
-      # Update App.json with DisplayName and setup.exe version
-      - name: Update App.json
-        id: update-json
-        shell: powershell
-        working-directory: "${{ github.workspace }}"
-        run: |
-          $params = @{
-              ConfigurationFile = "${{steps.extract.outputs.xml-path}}"
-              Version          = "${{steps.get-setup.outputs.version}}"   
-          }
-          .\scripts\New-Package.ps1 @params
-
-      # Create the app package
-      - name: Authn to the Graph API and upload M365 package
-        id: upload-package
-        shell: powershell
-        working-directory: "${{ github.workspace }}"
-        run: |
-          Import-Module -Name MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune -Force
-          $params = @{
-            TenantId     = "${{ secrets.TENANT_ID }}"
-            ClientID     = "${{ secrets.CLIENT_ID }}"
-            ClientSecret = "${{ secrets.CLIENT_SECRET }}"
-          }
-          $global:AuthToken = Connect-MSIntuneGraph @params
-
-          $params = @{
-            Json         = "${{ github.workspace }}\scripts\Temp.json"
-            PackageFile  = "${{steps.extract.outputs.intunewin-path}}"
-            SetupVersion = "${{steps.get-setup.outputs.version}}"
-          }
-          . ${{ github.workspace }}\scripts\Create-Win32App.ps1 @params
