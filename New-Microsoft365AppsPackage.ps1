@@ -40,7 +40,7 @@
     .EXAMPLE
         $params = @{
             Path              = E:\project\m365Apps
-            ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
+            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
             Channel           = Current
             CompanyName       = stealthpuppy   
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
@@ -152,7 +152,7 @@ process {
     #endregion
 
     #region Create the intunewin package
-    Write-Msg -Msg "Create intunewin package in; $Path\output."
+    Write-Msg -Msg "Create intunewin package in: $Path\output."
     $params = @{
         SourceFolder         = "$Path\PSAppDeployToolkit\Toolkit"
         SetupFile            = "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
@@ -170,7 +170,7 @@ process {
         Write-Msg -Msg "Copy App.json to: $Path\scripts\Temp.json."
         Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\scripts\Temp.json"
 
-        Write-Msg -Msg "."
+        Write-Msg -Msg "Get content from: $Path\scripts\Temp.json."
         $AppJson = Get-Content -Path "$Path\scripts\Temp.json" | ConvertFrom-Json
         $AppJson.PackageInformation.Version = $SetupVersion
 
@@ -202,8 +202,6 @@ process {
         $AppJson.Information.DisplayName = $DisplayName
         Write-Msg -Msg "Package display name: $DisplayName."
 
-        #$AppJson.Information.Description = $Xml.Configuration.Info.Description
-
         # Read the product Ids from the XML, order in alphabetical order, update value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
         for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
@@ -222,10 +220,10 @@ process {
     #endregion
     
     #region Authn if authn parameters are passed; Import package into Intune
-    if ($PSBoundParameters.Contains("Import")) {
+    if ($PSBoundParameters.ContainsKey("Import")) {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
 
-        if ($PSBoundParameters.Contains("TenantId")) {
+        if ($PSBoundParameters.ContainsKey("ClientId")) {
             $params = @{
                 TenantId     = $TenantId
                 ClientId     = $ClientId

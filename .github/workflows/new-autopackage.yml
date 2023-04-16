@@ -49,7 +49,8 @@ jobs:
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
-              Import            = $true 
+              Import            = $true
+              Verbose           = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
