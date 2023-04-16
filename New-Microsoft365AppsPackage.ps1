@@ -87,7 +87,6 @@ param(
 )
 
 begin {
-
     function Write-Msg ($Msg) {
         $params = @{
             MessageData       = "[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')] $Msg"
@@ -95,6 +94,14 @@ begin {
             Tags              = "Microsoft365"
         }
         Write-Information @params
+    }
+
+    try {
+        # Validate that the input file is XML
+        [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
+    }
+    catch {
+        throw [System.Xml.XmlException]::New("Failed to read as XML: $ConfigurationFile")
     }
 
     # Unblock all files in the repo
@@ -131,9 +138,9 @@ process {
 
     #region Update the configuration.xml
     try {
-        $ConfigurationFile = "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
-        Write-Msg -Msg "Read configuration file: $ConfigurationFile."
-        [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
+        $InstallXml = "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
+        Write-Msg -Msg "Read configuration file: $InstallXml."
+        [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
         Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
         $Xml.Configuration.Add.Channel = $Channel
         for ($n = 0; $n -le ($Xml.Configuration.Property.Count - 1); $n++) {
@@ -143,8 +150,8 @@ process {
         $Xml.Configuration.Property[$Index] = $TenantId
         Write-Msg -Msg "Set company name to: $CompanyName."
         $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
-        Write-Msg -Msg "Save configuration xml to: $Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml."
-        $Xml.Save("$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml")
+        Write-Msg -Msg "Save configuration xml to: $InstallXml."
+        $Xml.Save($InstallXml)
     }
     catch {
         throw $_
@@ -174,8 +181,8 @@ process {
         $AppJson = Get-Content -Path "$Path\output\m365apps.json" | ConvertFrom-Json
         $AppJson.PackageInformation.Version = $SetupVersion
 
-        Write-Msg -Msg "Read configuration xml file: $ConfigurationFile."
-        [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
+        Write-Msg -Msg "Read configuration xml file: $InstallXml."
+        [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
 
         # Update package display name
         [System.String] $ProductID = ""
@@ -215,7 +222,7 @@ process {
         
         # Update the registry version number detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
-        $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel}
+        $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel }
         $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "VersionToReport"))
         Write-Msg -Msg "Update channel version number for registry detection rule: $($ChannelVersion.Version)."
         $AppJson.DetectionRule[$Index].Value = $ChannelVersion.Version
@@ -235,7 +242,7 @@ process {
 
         # Get the package file
         $PackageFile = Get-ChildItem -Path "$Path\output" -Recurse -Include "setup.intunewin"
-        if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")  }
+        if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
 
         if ($PSBoundParameters.ContainsKey("ClientId")) {
             $params = @{
@@ -250,8 +257,8 @@ process {
         # Launch script to import the package
         Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
         $params = @{
-            Json         = "$Path\output\m365apps.json"
-            PackageFile  = $PackageFile.FullName
+            Json        = "$Path\output\m365apps.json"
+            PackageFile = $PackageFile.FullName
         }
         & "$Path\scripts\Create-Win32App.ps1" @params
     }
