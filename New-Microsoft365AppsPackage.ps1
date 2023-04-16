@@ -219,9 +219,9 @@ process {
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
         $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel}
         for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
-            if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "VersionToReport" }) { $VersionToReport = $n }
+            if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "VersionToReport" }) { $Index = $n }
         }
-        Write-Msg -Msg "Update channel version number for registry detection rule: $(ChannelVersion.Version)."
+        Write-Msg -Msg "Update channel version number for registry detection rule: $($ChannelVersion.Version)."
         $AppJson.DetectionRule[$Index].Value = $ChannelVersion.Version
 
         # Output details back to the JSON file
