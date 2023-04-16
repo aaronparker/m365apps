@@ -203,7 +203,9 @@ process {
         Write-Msg -Msg "Package display name: $DisplayName."
 
         # Update package description
-        $AppJson.Information.Description = "$($AppJson.Information.Description) Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ",")."
+        $Description = "$($AppJson.Information.Description) Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+        Write-Msg -Msg "Package description: $Description."
+        $AppJson.Information.Description = $Description
 
         # Read the product Ids from the XML, order in alphabetical order, update value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
