@@ -223,6 +223,10 @@ process {
     if ($PSBoundParameters.ContainsKey("Import")) {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
 
+        # Get the package file
+        $PackageFile = Get-ChildItem -Path "$Path\output" -Include "setup.intunewin"
+        if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")  }
+
         if ($PSBoundParameters.ContainsKey("ClientId")) {
             $params = @{
                 TenantId     = $TenantId
@@ -237,7 +241,7 @@ process {
         Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
         $params = @{
             Json         = "$Path\scripts\Temp.json"
-            PackageFile  = $PackageFile
+            PackageFile  = $PackageFile.FullName
             SetupVersion = $SetupVersion
         }
         & "$Path\scripts\Create-Win32App.ps1" @params
