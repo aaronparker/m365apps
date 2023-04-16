@@ -28,6 +28,14 @@ jobs:
         run: |
           Test-Path -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
 
+      - name: Install and cache PowerShell modules
+        id: psmodulecache
+        uses: potatoqualitee/psmodulecache@v5.2
+        with:
+          modules-to-cache: "MSAL.PS::, PSIntuneAuth::, AzureAD::, IntuneWin32App::, Microsoft.Graph.Intune::"
+          updatable: true
+          shell: powershell
+
       - name: Create package and import
         id: create-package
         shell: powershell
