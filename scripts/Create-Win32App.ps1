@@ -440,7 +440,7 @@ process {
         "DisplayName"              = $AppData.Information.DisplayName
         "Description"              = $AppData.Information.Description
         "AppVersion"               = $AppData.PackageInformation.Version
-        "Notes"                    = "Created by GitHub Workflow [$env:GITHUB_WORKFLOW] in repository [$env:GITHUB_REPOSITORY] on $(Get-Date -Format "yyyy-MM-dd") using setup.exe $SetupVersion."
+        #"Notes"                    = "Created by GitHub Workflow [$env:GITHUB_WORKFLOW] in repository [$env:GITHUB_REPOSITORY] on $(Get-Date -Format "yyyy-MM-dd") using setup.exe $SetupVersion."
         "Publisher"                = $AppData.Information.Publisher
         "Developer"                = $AppData.Information.Publisher
         "InformationURL"           = $AppData.Information.InformationURL
