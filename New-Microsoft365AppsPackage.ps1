@@ -209,18 +209,14 @@ process {
 
         # Read the product Ids from the XML, order in alphabetical order, update value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
-        for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
-            if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "ProductReleaseIds" }) { $Index = $n }
-        }
+        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "ProductReleaseIds"))
         Write-Msg -Msg "Update product release Ids for registry detection rule: $ProductReleaseIDs."
         $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
         
         # Update the registry version number detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
         $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel}
-        for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
-            if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "VersionToReport" }) { $Index = $n }
-        }
+        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "VersionToReport"))
         Write-Msg -Msg "Update channel version number for registry detection rule: $($ChannelVersion.Version)."
         $AppJson.DetectionRule[$Index].Value = $ChannelVersion.Version
 
