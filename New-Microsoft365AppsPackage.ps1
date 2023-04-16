@@ -1,5 +1,5 @@
 #Requires -PSEdition Desktop
-#Requires -Modules MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune
+#Requires -Modules Evergreen, MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
@@ -212,8 +212,16 @@ process {
         for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
             if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "ProductReleaseIds" }) { $Index = $n }
         }
-        Write-Msg -Msg "Product release Ids for registry detection rule: $ProductReleaseIDs."
+        Write-Msg -Msg "Update product release Ids for registry detection rule: $ProductReleaseIDs."
         $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
+        
+        # Update the registry version number detection rule
+        $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel}
+        for ($n = 0; $n -le ($AppJson.DetectionRule.Count - 1); $n++) {
+            if ($AppJson.DetectionRule | Where-Object { $_.ValueName -eq "VersionToReport" }) { $Index = $n }
+        }
+        Write-Msg -Msg "Update channel version number for registry detection rule: $ChannelVersion."
+        $AppJson.DetectionRule[$Index].Value = $ChannelVersion
 
         # Output details back to the JSON file
         Write-Msg -Msg "Write updated App.json details back to: $Path\output\m365apps.json."
