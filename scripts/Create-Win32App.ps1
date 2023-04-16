@@ -1,4 +1,4 @@
-﻿#Requires -PSEdition Core
+﻿#Requires -PSEdition Desktop
 #Requires -Modules IntuneWin32App
 <#
     .SYNOPSIS
