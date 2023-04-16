@@ -121,8 +121,8 @@ process {
         New-Item -Path "$Path\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         Write-Msg -Msg "Copy configuration files."
         Copy-Item -Path $ConfigurationFile -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
         Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
+        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
     }
     catch {
         throw $_
@@ -155,7 +155,7 @@ process {
     Write-Msg -Msg "Create intunewin package in: $Path\output."
     $params = @{
         SourceFolder         = "$Path\PSAppDeployToolkit\Toolkit"
-        SetupFile            = "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
+        SetupFile            = "Files\setup.exe"
         OutputFolder         = "$Path\output"
         Force                = $true
         IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
