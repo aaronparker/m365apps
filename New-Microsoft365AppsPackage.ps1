@@ -187,13 +187,13 @@ process {
                 $ProductID += "Microsoft 365 apps for business, "
             }
             "VisioProRetail" {
-                $ProductID += "Visio Plan 2, "
+                $ProductID += "Visio, "
             }
             "ProjectProRetail" {
-                $ProductID += "Project Online Desktop Client, "
+                $ProductID += "Project, "
             }
             "AccessRuntimeRetail" {
-                $ProductID += "Office 365 Access Runtime, "
+                $ProductID += "Access Runtime, "
             }
         }
         [System.String] $DisplayName = "$ProductID$($Xml.Configuration.Add.Channel)"
@@ -201,6 +201,9 @@ process {
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
         $AppJson.Information.DisplayName = $DisplayName
         Write-Msg -Msg "Package display name: $DisplayName."
+
+        # Update package description
+        $AppJson.Description = "$($AppJson.Description) Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ",")."
 
         # Read the product Ids from the XML, order in alphabetical order, update value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
