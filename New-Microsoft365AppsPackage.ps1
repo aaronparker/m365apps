@@ -167,11 +167,11 @@ process {
     try {
         $SetupVersion = (Get-Item -Path "$Path\m365\setup.exe").VersionInfo.FileVersion
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
-        Write-Msg -Msg "Copy App.json to: $Path\scripts\Temp.json."
-        Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\scripts\Temp.json"
+        Write-Msg -Msg "Copy App.json to: $Path\output\m365apps.json."
+        Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\output\m365apps.json"
 
-        Write-Msg -Msg "Get content from: $Path\scripts\Temp.json."
-        $AppJson = Get-Content -Path "$Path\scripts\Temp.json" | ConvertFrom-Json
+        Write-Msg -Msg "Get content from: $Path\output\m365apps.json."
+        $AppJson = Get-Content -Path "$Path\output\m365apps.json" | ConvertFrom-Json
         $AppJson.PackageInformation.Version = $SetupVersion
 
         Write-Msg -Msg "Read configuration xml file: $ConfigurationFile."
@@ -214,8 +214,8 @@ process {
         $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
 
         # Output details back to the JSON file
-        Write-Msg -Msg "Write updated App.json details back to: $Path\scripts\Temp.json."
-        $AppJson | ConvertTo-Json | Out-File -FilePath "$Path\scripts\Temp.json" -Force
+        Write-Msg -Msg "Write updated App.json details back to: $Path\output\m365apps.json."
+        $AppJson | ConvertTo-Json | Out-File -FilePath "$Path\output\m365apps.json" -Force
     }
     catch {
         throw $_
@@ -243,9 +243,8 @@ process {
         # Launch script to import the package
         Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
         $params = @{
-            Json         = "$Path\scripts\Temp.json"
+            Json         = "$Path\output\m365apps.json"
             PackageFile  = $PackageFile.FullName
-            SetupVersion = $SetupVersion
         }
         & "$Path\scripts\Create-Win32App.ps1" @params
     }
