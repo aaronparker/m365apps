@@ -8,30 +8,8 @@
       <ExcludeApp ID="Groove" />
       <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Bing" />
-    </Product>
-    <Product ID="VisioProRetail">
-      <Language ID="MatchOS" />
-      <Language ID="MatchPreviousMSI" />
-      <ExcludeApp ID="Access" />
-      <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Bing" />
-    </Product>
-    <Product ID="ProjectProRetail">
-      <Language ID="MatchOS" />
-      <Language ID="MatchPreviousMSI" />
-      <ExcludeApp ID="Access" />
-      <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Bing" />
-      <ExcludeApp ID="Bing" />
+      <ExcludeApp ID="Teams" />
+      <ExcludeApp ID="OneDrive" />
       <ExcludeApp ID="Bing" />
     </Product>
   </Add>
@@ -39,7 +17,7 @@
   <Property Name="FORCEAPPSHUTDOWN" Value="FALSE" />
   <Property Name="DeviceBasedLicensing" Value="0" />
   <Property Name="SCLCacheOverride" Value="0" />
-  <Property Name="TenantId" Value="9a95621c-b347-40ab-ab83-707f98942280" />
+  <Property Name="TenantId" Value="#TenantId" />
   <Updates Enabled="TRUE" />
   <RemoveMSI />
   <AppSettings>

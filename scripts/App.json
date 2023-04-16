@@ -13,7 +13,7 @@
     "Publisher": "Microsoft",
     "InformationURL": "https://www.microsoft365.com/",
     "PrivacyURL": "https://privacy.microsoft.com/en-US/privacystatement",
-    "Notes": ""
+    "Notes": "Package imported from https://github.com/aaronparker/m365apps"
   },
   "Program": {
     "InstallCommand": "Deploy-Application.exe -DeploymentType \"Install\" -DeployMode \"Silent\"",
