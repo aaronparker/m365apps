@@ -9,11 +9,11 @@
   },
   "Information": {
     "DisplayName": "Microsoft 365 Apps, Current channel, x64",
-    "Description": "Microsoft 365 Apps for the Windows desktop including Microsoft Word, Excel, PowerPoint, Outlook etc. This package will uninstall previous versions of Microsoft Office.",
+    "Description": "Microsoft 365 Apps for the Windows desktop including Microsoft Word, Excel, PowerPoint, Outlook etc. **This package will uninstall previous versions of Microsoft Office**.",
     "Publisher": "Microsoft",
     "InformationURL": "https://www.microsoft365.com/",
     "PrivacyURL": "https://privacy.microsoft.com/en-US/privacystatement",
-    "Notes": "Package imported from https://github.com/aaronparker/m365apps"
+    "Notes": "Package created with: https://github.com/aaronparker/m365apps"
   },
   "Program": {
     "InstallCommand": "Deploy-Application.exe -DeploymentType \"Install\" -DeployMode \"Silent\"",
