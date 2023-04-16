@@ -224,7 +224,7 @@ process {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
 
         # Get the package file
-        $PackageFile = Get-ChildItem -Path "$Path\output" -Include "setup.intunewin"
+        $PackageFile = Get-ChildItem -Path "$Path\output" -Recurse -Include "setup.intunewin"
         if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")  }
 
         if ($PSBoundParameters.ContainsKey("ClientId")) {
