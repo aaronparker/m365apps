@@ -120,7 +120,7 @@ process {
         New-Item -Path "$Path\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$Path\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         Write-Msg -Msg "Copy configuration files."
-        Copy-Item -Path "$Path\configs\$ConfigurationFile" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
+        Copy-Item -Path $ConfigurationFile -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
         Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
         Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
     }
