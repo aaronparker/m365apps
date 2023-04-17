@@ -81,7 +81,7 @@ jobs:
 
       - name: Create package artifact only
         id: create-artifact
-        if:  ${{ github.event.inputs.import == 'true' }}
+        if:  ${{ github.event.inputs.import == 'false' }}
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
