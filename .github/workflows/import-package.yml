@@ -89,4 +89,4 @@ jobs:
         with:
           name: m365-package-${{ steps.release.outputs.release }}
           path: |
-            ${{ github.workspace }}/output/${{ steps.release.outputs.release }}/*
+            ${{ github.workspace }}/packages/${{ steps.release.outputs.release }}/*
