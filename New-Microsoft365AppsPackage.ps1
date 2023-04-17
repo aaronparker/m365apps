@@ -142,9 +142,7 @@ process {
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
         Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
         $Xml.Configuration.Add.Channel = $Channel
-        for ($n = 0; $n -le ($Xml.Configuration.Property.Count - 1); $n++) {
-            if ($Xml.Configuration.Property | Where-Object { $_.Name -eq "TenantId" }) { $Index = $n }
-        }
+        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
         Write-Msg -Msg "Set tenant id to: $TenantId."
         $Xml.Configuration.Property[$Index] = $TenantId
         Write-Msg -Msg "Set company name to: $CompanyName."

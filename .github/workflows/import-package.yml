@@ -65,20 +65,6 @@ jobs:
           Copy-Item -Path "${{ github.workspace }}\output\m365apps.json" -Destination "${{ github.workspace }}\packages\$Release\m365apps.json"
           Copy-Item -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}" -Destination "${{ github.workspace }}\packages\$Release\${{ github.event.inputs.configuration }}"
 
-      # - name: Import GPG key
-      #   id: import_gpg
-      #   uses: crazy-max/ghaction-import-gpg@v5
-      #   with:
-      #     gpg_private_key: ${{ secrets.GPGKEY }}
-      #     passphrase: ${{ secrets.GPGPASSPHRASE }}
-      #     git_user_signingkey: true
-      #     git_commit_gpgsign: true
-      #     git_config_global: true
-      #     git_tag_gpgsign: true
-      #     git_push_gpgsign: false
-      #     git_committer_name: ${{ secrets.COMMIT_NAME }}
-      #     git_committer_email: ${{ secrets.COMMIT_EMAIL }}
-
       - name: Set release
         id: release
         run: echo "::set-output name=release::$(Get-Date -Format yyyyMMdd).${{ github.run_number }}"
