@@ -14,11 +14,11 @@ Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administr
 ```powershell
 Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
 $params = @{
-    Path             = E:\project\m365Apps
-    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
-    Channel          = Current
-    CompanyName      = stealthpuppy   
-    TenantId         = 6cdd8179-23e5-43d1-8517-b6276a8d3189
+    Path             = "E:\project\m365Apps"
+    ConfigurationFile = "E:\project\m365Apps\configs\O365ProPlus.xml"
+    Channel          = "Current"
+    CompanyName      = "stealthpuppy"
+    TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
     Import           = $true 
 }
 .\New-Microsoft365AppsPackage.ps1 @params
@@ -28,13 +28,13 @@ Create a new package by passing credentials to an Azure AD app registration that
 
 ```powershell
 $params = @{
-    Path             = E:\project\m365Apps
-    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
-    Channel          = MonthlyEnterprise
-    CompanyName      = stealthpuppy   
-    TenantId         = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-    ClientId         = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
-    ClientSecret     = <secret>
+    Path             = "E:\project\m365Apps"
+    ConfigurationFile = "E:\project\m365Apps\configs\O365ProPlus.xml"
+    Channel          = "MonthlyEnterprise"
+    CompanyName      = "stealthpuppy"
+    TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
+    ClientId         = "60912c81-37e8-4c94-8cd6-b8b90a475c0e"
+    ClientSecret     = "<secret>"
     Import           = $true 
 }
 .\New-Microsoft365AppsPackage.ps1 @params
