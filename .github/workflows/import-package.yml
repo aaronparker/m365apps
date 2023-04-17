@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       configuration:
-        description: Configuration XML file for the package, located in the configs directory.
+        description: Configuration file
         type: choice
         options:
           - O365ProPlusVisioProRetailProjectProRetail.xml
@@ -20,7 +20,7 @@ on:
           - O365ProPlus-VDI.xml
           - O365BusinessRetail-VDI.xml
       channel:
-        description: Microsoft 365 Apps update channel
+        description: Update channel
         type: choice
         options:
           - MonthlyEnterprise
@@ -34,12 +34,12 @@ on:
         required: false
         default: stealthpuppy
       import:
-        description: "Import package? (if not enabled, package can be downloaded from pipeline artifacts)"
+        description: "Import? (if not enabled, download package from pipeline artifacts)"
         default: true
         type: boolean
 
 jobs:
-  import-package:
+  new-package:
     runs-on: windows-latest
 
     steps:
