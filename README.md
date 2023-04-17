@@ -2,6 +2,8 @@
 
 A PowerShell script and GitHub Actions workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.
 
+![The Microsoft 365 Apps package imported into Intune](.img/intune-package.png)
+
 ## Configuration Files
 
 Microsoft 365 Apps configuration files are included in this repository - these files can be used to create packages for any target tenant as some key options will be updated dynamically by this solution. 
@@ -83,15 +85,17 @@ The app registration requires the following API permissions:
 | DeviceManagementApps.ReadAll | Application | Read Microsoft Intune apps | Yes |
 | DeviceManagementApps.ReadWriteAll | Application | Read and write Microsoft Intune apps | Yes |
 
-## Import Package Workflow
+## New Package Workflow
 
 Requires the following secrets on the repo:
 
-* `TENANT_ID` - tenant ID used by `import-package.yml`
-* `CLIENT_ID` - app registration client ID used by `import-package.yml` to authenticate to the target tenent
-* `CLIENT_SECRET` - password used by `import-package.yml` to authenticate to the target tenent
+* `TENANT_ID` - tenant ID used by `new-package.yml`
+* `CLIENT_ID` - app registration client ID used by `new-package.yml` to authenticate to the target tenent
+* `CLIENT_SECRET` - password used by `new-package.yml` to authenticate to the target tenent
 
 The workflow is run on demand ([workflow_dispatch](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow)) requires input when run. This must be a configuration XML file that exists in the `configs` directory in this repository.
+
+![Running the new-package workflow with inputs](.img/run-workflow.png)
 
 To use the package workflow, [clone this repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository), enable GitHub Actions, and configure the [repository secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets).
 
