@@ -213,7 +213,7 @@ process {
         Write-Msg -Msg "Package display name: $DisplayName."
 
         # Update package description
-        $Description = "$($xml.Configuration.Info.Description)`n**This package will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+        $Description = "$($xml.Configuration.Info.Description)`n`n**This package will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
         Write-Msg -Msg "Package description: $Description."
         $AppJson.Information.Description = $Description
 
