@@ -1,5 +1,5 @@
 <Configuration ID="23f40de0-02a2-4c8a-a4ee-4ca3f7bddc01">
-  <Info Description="Microsoft 365 Apps for business 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams, Visio and Project. Configured with shared computer licensing and hardware acceleration configured for virtual desktop environments." />
+  <Info Description="Microsoft 365 Apps for business 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams. Configured with shared computer licensing and hardware acceleration configured for virtual desktop environments." />
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365BusinessRetail">
       <Language ID="MatchOS" />
