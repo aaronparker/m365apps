@@ -120,7 +120,6 @@ begin {
 }
 
 process {
-
     #region Create working directories; Copy files for the package
     try {
         Write-Msg -Msg "Create directories."
