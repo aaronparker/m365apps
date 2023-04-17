@@ -56,14 +56,15 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $false)]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Path to the top level directory of the repository.")]
+    [Parameter(Mandatory = $false, HelpMessage = "Path to the top level directory of the repository.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ Test-Path -Path $_ })]
-    [System.String] $Path,
+    [System.String] $Path = $PSScriptRoot,
 
     [Parameter(Mandatory = $true, HelpMessage = "Path to the Microsoft 365 Apps package configuration file.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ Test-Path -Path $_ })]
+    [ValidateScript({ (Get-Item $_).Extension -eq '.xml' })]
     [System.String] $ConfigurationFile,
 
     [Parameter(Mandatory = $false, HelpMessage = "Microsoft 365 Apps release channel.")]
@@ -79,7 +80,12 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $TenantId,
 
+    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Azure AD app registration.")]
+    [ValidateNotNullOrEmpty()]
     [System.String] $ClientId,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Client secret used to authenticate against the app registration.")]
+    [ValidateNotNullOrEmpty()]
     [System.String] $ClientSecret,
 
     [Parameter(Mandatory = $false, HelpMessage = "Import the package into Microsoft Intune.")]
@@ -207,7 +213,7 @@ process {
         Write-Msg -Msg "Package display name: $DisplayName."
 
         # Update package description
-        $Description = "$($AppJson.Information.Description) Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+        $Description = "$($xml.Configuration.Info.Description)`n**This package will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
         Write-Msg -Msg "Package description: $Description."
         $AppJson.Information.Description = $Description
 
