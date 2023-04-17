@@ -121,7 +121,8 @@ begin {
         "$Path\intunewin\IntuneWinAppUtil.exe",
         "$Path\m365\setup.exe",
         "$Path\scripts\App.json",
-        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe"
+        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe",
+        "$Path\icons\Microsoft365.png"
     ) | ForEach-Object { if (-not (Test-Path -Path $_)) { throw [System.IO.FileNotFoundException]::New("File not found: $_") } }
 }
 
@@ -211,6 +212,10 @@ process {
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
         $AppJson.Information.DisplayName = $DisplayName
         Write-Msg -Msg "Package display name: $DisplayName."
+
+        # Update icon location
+        Write-Msg -Msg "Using icon location: $Path\icons\Microsoft365.png."
+        $AppJson.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
 
         # Update package description
         $Description = "$($xml.Configuration.Info.Description)`n`n**This package will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
