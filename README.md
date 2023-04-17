@@ -2,6 +2,24 @@
 
 A script and workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.
 
+## Configuration Files
+
+Microsoft 365 Apps configuration files are included in this repository - these files can be used to create packages for any target tenant as some key options will be updated dynamically by this solution. 
+
+* `O365BusinessRetail.xml` - Configuration file for Microsoft 365 Apps for business
+* `O365BusinessRetail-VDI.xml` - Configuration file for Microsoft 365 Apps for business with shared licensing enabled, and OneDrive and Teams excluded
+* `O365ProPlus.xml` - Configuration file for Microsoft 365 Apps for enterprise
+* `O365ProPlus-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise with shared licensing enabled, and OneDrive and Teams excluded
+* `O365ProPlusVisioProRetailProjectProRetail.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project
+* `O365ProPlusVisioProRetailProjectProRetail-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project with shared licensing enabled, and OneDrive and Teams excluded
+* `Uninstall-Microsoft365Apps.xml` - A configuration that will uninstall all Microsoft 365 Apps
+
+When the package is generated, the following properties will be updated:
+
+* Company name
+* Tenant id
+* Channel
+
 ## Scripts
 
 * `New-Microsoft365AppsPackage.ps1` - Creates and imports a Microsoft 365 Apps package into Intune via GitHub Actions or from a local copy of this repository
@@ -49,7 +67,7 @@ $params = @{
 | Parameter | Description | Required |
 |:--|:--|:--|
 | Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
-| ConfigurationFile | Full path to the Microsoft 365 Apps package configuration file. | Yes |
+| ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
 | Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
 | CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
 | TenantId | The tenant id (GUID) of the target Azure AD tenant. | Yes |
