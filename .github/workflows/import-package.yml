@@ -34,7 +34,7 @@ on:
         required: false
         default: stealthpuppy
       import:
-        description: "Import package?"
+        description: "Import package? (if not enabled, package can be downloaded from pipeline artifacts)"
         default: true
         type: boolean
 
@@ -60,8 +60,9 @@ jobs:
           updatable: true
           shell: powershell
 
-      - name: Create package and import
-        id: create-package
+      - name: Create and Import package
+        id: import-package
+        if:  ${{ github.event.inputs.import == 'true' }}
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
@@ -73,7 +74,26 @@ jobs:
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
-              Import            = ${{ github.event.inputs.import }}
+              Import            = $true
+              Verbose           = $true
+          }
+          & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
+
+      - name: Create package artifact only
+        id: create-artifact
+        if:  ${{ github.event.inputs.import == 'true' }}
+        shell: powershell
+        working-directory: "${{ github.workspace }}"
+        run: |
+          $params = @{
+              Path              = "${{ github.workspace }}"
+              ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+              Channel           = "${{ github.event.inputs.channel }}"
+              CompanyName       = "${{ github.event.inputs.companyname }}"
+              TenantId          = "${{ secrets.TENANT_ID }}"
+              ClientId          = "${{ secrets.CLIENT_ID }}"
+              ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
+              Import            = $false
               Verbose           = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
