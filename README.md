@@ -28,6 +28,21 @@ When the package is generated, the following properties will be updated:
 * `Create-Win32App.ps1` imports the intunewin package into the target Intune tenant, using `App.json` as the template. Called by `New-Microsoft365AppsPackage.ps1`
 * `scrub` - Office Scrub Scripts, Office uninstall and scrub scripts sources from [Deploy-OfficeClickToRun](https://github.com/OfficeDev/Office-IT-Pro-Deployment-Scripts/tree/master/Office-ProPlus-Deployment/Deploy-OfficeClickToRun). These ensure that existing Office MSI or Click-to-Run packages installed on the target machine are cleanly uninstalled before installing the Microsoft 365 Apps
 
+### New-Microsoft365AppsPackage.ps1 Requirements
+
+`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1. Parameters for `New-Microsoft365AppsPackage.ps1` are:
+
+| Parameter | Description | Required |
+|:--|:--|:--|
+| Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
+| ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
+| Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
+| CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
+| TenantId | The tenant id (GUID) of the target Azure AD tenant. | Yes |
+| ClientId | The client id (GUID) of the target Azure AD app registration. | No |
+| ClientSecret | Client secret used to authenticate against the app registration. | No |
+| Import | Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant. | No |
+
 ### Usage via Administrator Sign-in
 
 Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administrator account before running the script. Run `Connect-MSIntuneGraph` to authenticate with administrator credentials using a sign-in window or device login URL.
@@ -63,20 +78,7 @@ $params = @{
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
 
-### Requirements
-
-`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1. Parameters for `New-Microsoft365AppsPackage.ps1` are:
-
-| Parameter | Description | Required |
-|:--|:--|:--|
-| Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
-| ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
-| Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
-| CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
-| TenantId | The tenant id (GUID) of the target Azure AD tenant. | Yes |
-| ClientId | The client id (GUID) of the target Azure AD app registration. | No |
-| ClientSecret | Client secret used to authenticate against the app registration. | No |
-| Import | Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant. | No |
+### App Registration Requirements
 
 The app registration requires the following API permissions:
 

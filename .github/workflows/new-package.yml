@@ -34,7 +34,7 @@ on:
         required: false
         default: stealthpuppy
       import:
-        description: "Import? (if not enabled, download package from pipeline artifacts)"
+        description: "Import? (if not selected, download package from pipeline artifacts)"
         default: true
         type: boolean
 
