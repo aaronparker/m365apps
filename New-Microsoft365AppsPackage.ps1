@@ -144,7 +144,7 @@ process {
         $Xml.Configuration.Add.Channel = $Channel
         $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
         Write-Msg -Msg "Set tenant id to: $TenantId."
-        $Xml.Configuration.Property[$Index] = $TenantId
+        $Xml.Configuration.Property[$Index].Value = $TenantId
         Write-Msg -Msg "Set company name to: $CompanyName."
         $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
         Write-Msg -Msg "Save configuration xml to: $InstallXml."
