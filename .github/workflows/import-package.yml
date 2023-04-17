@@ -63,7 +63,7 @@ jobs:
           New-Item -Path "${{ github.workspace }}\packages\$Release" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           Copy-Item -Path "${{ github.workspace }}\output\setup.intunewin" -Destination "${{ github.workspace }}\packages\$Release\setup.intunewin"
           Copy-Item -Path "${{ github.workspace }}\output\m365apps.json" -Destination "${{ github.workspace }}\packages\$Release\m365apps.json"
-          Copy-Item -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}" -Destination "${{ github.workspace }}\packages\$Release\${{ github.event.inputs.configuration }}"
+          Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml" -Destination "${{ github.workspace }}\packages\$Release\${{ github.event.inputs.configuration }}"
 
       - name: Set release
         id: release
