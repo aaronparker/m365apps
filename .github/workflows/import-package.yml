@@ -56,27 +56,28 @@ jobs:
 
       - name: Copy package
         id: copy-package
-        shell: pwsh
+        shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
           $Release = "$(Get-Date -Format yyyyMMdd).$(${{ github.run_number }})"
           New-Item -Path "${{ github.workspace }}\packages\$Release" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           Copy-Item -Path "${{ github.workspace }}\output\setup.intunewin" -Destination "${{ github.workspace }}\packages\$Release\setup.intunewin"
+          Copy-Item -Path "${{ github.workspace }}\output\m365apps.json" -Destination "${{ github.workspace }}\packages\$Release\m365apps.json"
           Copy-Item -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}" -Destination "${{ github.workspace }}\packages\$Release\${{ github.event.inputs.configuration }}"
 
-      - name: Import GPG key
-        id: import_gpg
-        uses: crazy-max/ghaction-import-gpg@v5
-        with:
-          gpg_private_key: ${{ secrets.GPGKEY }}
-          passphrase: ${{ secrets.GPGPASSPHRASE }}
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-          git_config_global: true
-          git_tag_gpgsign: true
-          git_push_gpgsign: false
-          git_committer_name: ${{ secrets.COMMIT_NAME }}
-          git_committer_email: ${{ secrets.COMMIT_EMAIL }}
+      # - name: Import GPG key
+      #   id: import_gpg
+      #   uses: crazy-max/ghaction-import-gpg@v5
+      #   with:
+      #     gpg_private_key: ${{ secrets.GPGKEY }}
+      #     passphrase: ${{ secrets.GPGPASSPHRASE }}
+      #     git_user_signingkey: true
+      #     git_commit_gpgsign: true
+      #     git_config_global: true
+      #     git_tag_gpgsign: true
+      #     git_push_gpgsign: false
+      #     git_committer_name: ${{ secrets.COMMIT_NAME }}
+      #     git_committer_email: ${{ secrets.COMMIT_EMAIL }}
 
       - name: Set release
         id: release
@@ -88,4 +89,4 @@ jobs:
         with:
           name: m365-package-${{ steps.release.outputs.release }}
           path: |
-            ${{ github.workspace }}/packages/${{ steps.release.outputs.release }}/*
+            ${{ github.workspace }}/output/${{ steps.release.outputs.release }}/*
