@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       configuration:
-        description: Configuration XML file to include in the package.
+        description: Configuration XML file for the package, located in the configs directory.
         required: true
         default: O365ProPlusVisioProRetailProjectProRetail.xml
 

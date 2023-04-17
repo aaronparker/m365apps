@@ -91,6 +91,10 @@ Requires the following secrets on the repo:
 * `CLIENT_ID` - app registration client ID used by `import-package.yml` to authenticate to the target tenent
 * `CLIENT_SECRET` - password used by `import-package.yml` to authenticate to the target tenent
 
+The workflow is run on demand ([workflow_dispatch](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow)) requires input when run. This must be a configuration XML file that exists in the `configs` directory in this repository.
+
+To use the package workflow, [clone this repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository), enable GitHub Actions, and configure the [repository secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets).
+
 ## Update Binaries Workflow
 
 This repository includes copies of the following binaries and support files that are automatically kept updated with the latest versions:
