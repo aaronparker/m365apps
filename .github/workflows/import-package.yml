@@ -11,8 +11,32 @@ on:
     inputs:
       configuration:
         description: Configuration XML file for the package, located in the configs directory.
-        required: true
-        default: O365ProPlusVisioProRetailProjectProRetail.xml
+        type: choice
+        options:
+          - O365ProPlusVisioProRetailProjectProRetail.xml
+          - O365ProPlus.xml
+          - O365BusinessRetail.xml
+          - O365ProPlusVisioProRetailProjectProRetail-VDI.xml          
+          - O365ProPlus-VDI.xml
+          - O365BusinessRetail-VDI.xml
+      channel:
+        description: Microsoft 365 Apps update channel
+        type: choice
+        options:
+          - MonthlyEnterprise
+          - Current
+          - SemiAnnual
+          - SemiAnnualPreview
+          - CurrentPreview
+          - BetaChannel
+      companyname:
+        description: Company name
+        required: false
+        default: stealthpuppy
+      import:
+        description: "Import package?"
+        default: true
+        type: boolean
 
 jobs:
   import-package:
@@ -44,12 +68,12 @@ jobs:
           $params = @{
               Path              = "${{ github.workspace }}"
               ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
-              Channel           = "MonthlyEnterprise"
-              CompanyName       = "stealthpuppy"
+              Channel           = "${{ github.event.inputs.channel }}"
+              CompanyName       = "${{ github.event.inputs.companyname }}"
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
-              Import            = $true
+              Import            = ${{ github.event.inputs.import }}
               Verbose           = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
