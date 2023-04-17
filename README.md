@@ -26,7 +26,7 @@ $params = @{
 
 ### Usage via App Registration
 
-Create a new package by passing credentials to an Azure AD app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
+Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Azure AD app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
 
 ```powershell
 $params = @{
@@ -41,6 +41,21 @@ $params = @{
 }
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
+
+### Requirements
+
+`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1. Parameters for `New-Microsoft365AppsPackage.ps1` are:
+
+| Parameter | Description | Required |
+|:--|:--|:--|
+| Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
+| ConfigurationFile | Full path to the Microsoft 365 Apps package configuration file. | Yes |
+| Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
+| CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
+| TenantId | The tenant id (GUID) of the target Azure AD tenant. | Yes |
+| ClientId | The client id (GUID) of the target Azure AD app registration. | No |
+| ClientSecret | Client secret used to authenticate against the app registration. | No |
+| Import | Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant. | No |
 
 The app registration requires the following API permissions:
 

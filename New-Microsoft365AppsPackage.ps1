@@ -11,16 +11,22 @@
         Path to the top level directory of the m365apps repository on a local Windows machine.
 
     .PARAMETER ConfigurationFile
-        Path to the Microsoft 365 Apps package configuration file.
+        Full path to the Microsoft 365 Apps package configuration file.
 
     .PARAMETER Channel
-        Microsoft 365 Apps release channel.
+        A supported Microsoft 365 Apps release channel.
 
     .PARAMETER CompanyName
         Company name to include in the configuration.xml.
 
     .PARAMETER TenantId
         The tenant id (GUID) of the target Azure AD tenant.
+
+    .PARAMETER ClientId
+        The client id (GUID) of the target Azure AD app registration.
+
+    .PARAMETER ClientSecret
+        Client secret used to authenticate against the app registration.
 
     .PARAMETER Import
         Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant.
