@@ -94,7 +94,7 @@ jobs:
       - name: Get date
         id: get-date
         run: |
-          echo "::set-output name=date::$(Get-Date -Format "yyyy.MM.dd")"
+          echo "date=$(Get-Date -Format "yyyy.MM.dd")" >> $GITHUB_OUTPUT
 
       - name: Commit changes
         id: commit

@@ -98,20 +98,20 @@ jobs:
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
+      - name: Set release
+        id: release
+        run: echo "release=$($(Get-Date -Format yyyyMMdd).${{ github.run_number }})" >> $GITHUB_OUTPUT
+
       - name: Copy package
         id: copy-package
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
-          $Release = "$(Get-Date -Format yyyyMMdd).$(${{ github.run_number }})"
+          $Release = "${{ steps.release.outputs.release }}"
           New-Item -Path "${{ github.workspace }}\packages\$Release" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           Copy-Item -Path "${{ github.workspace }}\output\setup.intunewin" -Destination "${{ github.workspace }}\packages\$Release\setup.intunewin"
           Copy-Item -Path "${{ github.workspace }}\output\m365apps.json" -Destination "${{ github.workspace }}\packages\$Release\m365apps.json"
           Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml" -Destination "${{ github.workspace }}\packages\$Release\${{ github.event.inputs.configuration }}"
-
-      - name: Set release
-        id: release
-        run: echo "::set-output name=release::$(Get-Date -Format yyyyMMdd).${{ github.run_number }}"
 
       - name: Upload artifacts
         id: upload-artifacts

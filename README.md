@@ -1,6 +1,6 @@
 # Microsoft 365 Apps packager for Intune
 
-A script and workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.
+A PowerShell script and GitHub Actions workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.
 
 ## Configuration Files
 
@@ -97,10 +97,12 @@ To use the package workflow, [clone this repository](https://docs.github.com/en/
 
 ## Update Binaries Workflow
 
+[![Update binaries](https://github.com/aaronparker/m365apps/actions/workflows/update-binaries.yml/badge.svg)](https://github.com/aaronparker/m365apps/actions/workflows/update-binaries.yml)
+
 This repository includes copies of the following binaries and support files that are automatically kept updated with the latest versions:
 
 * [Microsoft 365 Apps / Office Deployment Tool](https://www.microsoft.com/en-us/download/details.aspx?id=49117) (`setup.exe`) - the key installer required to install, configure and uninstall the Microsoft 365 Apps
-* [Microsoft Win32 Content Prep Tool](https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool) - the tool that converts Win32 applications into the intunewin package format
+* [Microsoft Win32 Content Prep Tool](https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool) (`IntuneWinAppUtil.exe`) - the tool that converts Win32 applications into the intunewin package format
 * [PSAppDeployToolkit](https://psappdeploytoolkit.com/) - the install is managed with the PowerShell App Deployment Toolkit
 
 If you have cloned this repository, ensure that you synchronise changes to update binaries to the latest version releases.
