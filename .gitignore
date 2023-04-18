@@ -1,12 +1,3 @@
-# Cache objects
-packer_cache/
-
-# Crash log
-crash.log
-
-# For built boxes
-*.box
-
 # OS generated files #
 ######################
 .DS_Store
@@ -17,10 +8,13 @@ crash.log
 ehthumbs.db
 Thumbs.db
 
-# Temp
+# Package temp files
+scripts/Temp.json
 tmp/**
 output/**
+package/**
 artifacts/**
+.intunewin
 
 # PSAppDeployToolkit
 PSAppDeployToolkit/PSAppDeployToolkit.pdf
@@ -28,7 +22,3 @@ PSAppDeployToolkit/Examples/**
 PSAppDeployToolkit/CHANGELOG.txt
 PSAppDeployToolkit/LICENSE.txt
 PSAppDeployToolkit/Toolkit/Files/**
-
-# Package temp files
-scripts/Temp.json
-

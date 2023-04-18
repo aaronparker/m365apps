@@ -70,7 +70,7 @@ param(
     [Parameter(Mandatory = $true, HelpMessage = "Path to the Microsoft 365 Apps package configuration file.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ Test-Path -Path $_ })]
-    [ValidateScript({ (Get-Item $_).Extension -eq '.xml' })]
+    [ValidateScript({ (Get-Item -Path $_).Extension -eq ".xml" })]
     [System.String] $ConfigurationFile,
 
     [Parameter(Mandatory = $false, HelpMessage = "Microsoft 365 Apps release channel.")]

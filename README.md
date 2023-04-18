@@ -50,8 +50,8 @@ Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administr
 ```powershell
 Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
 $params = @{
-    Path             = "E:\project\m365Apps"
-    ConfigurationFile = "E:\project\m365Apps\configs\O365ProPlus.xml"
+    Path             = "E:\projects\m365Apps"
+    ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
     Channel          = "Current"
     CompanyName      = "stealthpuppy"
     TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
@@ -66,8 +66,8 @@ Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credent
 
 ```powershell
 $params = @{
-    Path             = "E:\project\m365Apps"
-    ConfigurationFile = "E:\project\m365Apps\configs\O365ProPlus.xml"
+    Path             = "E:\projects\m365Apps"
+    ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
     Channel          = "MonthlyEnterprise"
     CompanyName      = "stealthpuppy"
     TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
