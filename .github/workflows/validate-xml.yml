@@ -1,0 +1,33 @@
+name: Validate XML
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - configs/**.xml
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for unique GUIDs
+        id: guides
+        shell: pwsh
+        working-directory: "${{ github.workspace }}"
+        run: |
+          $XmlGuids = Get-ChildItem -Path . -Recurse -Include "${{ github.workspace }}/configs/*.xml" -Exclude "Uninstall-Microsoft365Apps.xml" | ForEach-Object {
+            [System.Xml.XmlDocument]$Xml = Get-Content -Path $_.FullName
+            [PSCustomObject]@{
+                Name = $_.Name
+                Guid = $Xml.Configuration.ID
+            }
+          }
+          if ($XmlGuids.Count -ne ($XmlGuids | Get-Unique).Count) { throw "GUIDs in configuration XML files are not unique." }
+      
