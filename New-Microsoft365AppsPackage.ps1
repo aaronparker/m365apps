@@ -268,8 +268,8 @@ process {
         $AppJson.DetectionRule[$Index].Value = $Value
 
         # Output details back to the JSON file
-        Write-Msg -Msg "Write updated App.json details back to: $Path\output\m365apps.json."
-        $AppJson | ConvertTo-Json | Out-File -FilePath "$Path\output\m365apps.json" -Force
+        Write-Msg -Msg "Write updated App.json details back to: $OutputPath\output\m365apps.json."
+        $AppJson | ConvertTo-Json | Out-File -FilePath "$OutputPath\output\m365apps.json" -Force
     }
     catch {
         throw $_
