@@ -22,12 +22,12 @@ jobs:
         shell: pwsh
         working-directory: "${{ github.workspace }}"
         run: |
-          $XmlGuids = Get-ChildItem -Path . -Recurse -Include "${{ github.workspace }}/configs/*.xml" -Exclude "Uninstall-Microsoft365Apps.xml" | ForEach-Object {
+          $XmlGuids = Get-ChildItem -Path "${{ github.workspace }}/configs" -Recurse -Include "*.xml" -Exclude "Uninstall-Microsoft365Apps.xml" | ForEach-Object {
             [System.Xml.XmlDocument]$Xml = Get-Content -Path $_.FullName
             [PSCustomObject]@{
                 Name = $_.Name
                 Guid = $Xml.Configuration.ID
             }
           }
-          if ($XmlGuids.Count -ne ($XmlGuids | Get-Unique).Count) { throw "GUIDs in configuration XML files are not unique." }
+          if ($XmlGuids.Guid.Count -ne ($XmlGuids.Guid | Get-Unique).Count) { throw "GUIDs in configuration XML files are not unique." }
       

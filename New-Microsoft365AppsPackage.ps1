@@ -37,9 +37,9 @@
             Path              = E:\project\m365Apps
             ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
             Channel           = Current
-            CompanyName       = stealthpuppy   
+            CompanyName       = stealthpuppy
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-            Import            = $true 
+            Import            = $true
         }
         .\New-Microsoft365AppsPackage.ps1 @params
 
@@ -48,11 +48,11 @@
             Path              = E:\project\m365Apps
             ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
             Channel           = Current
-            CompanyName       = stealthpuppy   
+            CompanyName       = stealthpuppy
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
             ClientId          = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
             ClientSecret      = <secret>
-            Import            = $true 
+            Import            = $true
         }
         .\New-Microsoft365AppsPackage.ps1 @params
 
@@ -233,7 +233,7 @@ process {
         $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "ProductReleaseIds"))
         Write-Msg -Msg "Update product release Ids for registry detection rule: $ProductReleaseIDs."
         $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
-        
+
         # Update the registry version number detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
         $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel }
@@ -249,7 +249,7 @@ process {
         throw $_
     }
     #endregion
-    
+
     #region Authn if authn parameters are passed; Import package into Intune
     if ($PSBoundParameters.ContainsKey("Import")) {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
@@ -265,7 +265,7 @@ process {
                 ClientSecret = $ClientSecret
             }
             Write-Msg -Msg "Authenticate to tenant: $TenantId."
-            $global:AuthToken = Connect-MSIntuneGraph @params
+            [Void](Connect-MSIntuneGraph @params)
         }
 
         # Launch script to import the package
