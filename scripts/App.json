@@ -50,15 +50,6 @@
       "Type": "Registry",
       "DetectionMethod": "StringComparison",
       "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
-      "ValueName": "StreamingFinished",
-      "Operator": "equal",
-      "Value": "True",
-      "Check32BitOn64System": "false"
-    },
-    {
-      "Type": "Registry",
-      "DetectionMethod": "StringComparison",
-      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
       "ValueName": "SharedComputerLicensing",
       "Operator": "equal",
       "Value": "0",

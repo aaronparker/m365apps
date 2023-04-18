@@ -138,6 +138,7 @@ process {
         Write-Msg -Msg "Create directories."
         New-Item -Path "$Path\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$Path\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+
         Write-Msg -Msg "Copy configuration files."
         Copy-Item -Path $ConfigurationFile -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
         Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
@@ -153,13 +154,17 @@ process {
         $InstallXml = "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
         Write-Msg -Msg "Read configuration file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
+
         Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
         $Xml.Configuration.Add.Channel = $Channel
-        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
+
         Write-Msg -Msg "Set tenant id to: $TenantId."
+        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
         $Xml.Configuration.Property[$Index].Value = $TenantId
+
         Write-Msg -Msg "Set company name to: $CompanyName."
         $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
+
         Write-Msg -Msg "Save configuration xml to: $InstallXml."
         $Xml.Save($InstallXml)
     }
@@ -184,11 +189,14 @@ process {
     try {
         $SetupVersion = (Get-Item -Path "$Path\m365\setup.exe").VersionInfo.FileVersion
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
+
         Write-Msg -Msg "Copy App.json to: $Path\output\m365apps.json."
         Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\output\m365apps.json"
 
         Write-Msg -Msg "Get content from: $Path\output\m365apps.json."
         $AppJson = Get-Content -Path "$Path\output\m365apps.json" | ConvertFrom-Json
+
+        Write-Msg -Msg "Using setup.exe version: $SetupVersion."
         $AppJson.PackageInformation.Version = $SetupVersion
 
         Write-Msg -Msg "Read configuration xml file: $InstallXml."
@@ -216,8 +224,8 @@ process {
         [System.String] $DisplayName = "$ProductID$($Xml.Configuration.Add.Channel)"
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { $DisplayName = "$DisplayName, x64" }
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
-        $AppJson.Information.DisplayName = $DisplayName
         Write-Msg -Msg "Package display name: $DisplayName."
+        $AppJson.Information.DisplayName = $DisplayName
 
         # Update icon location
         Write-Msg -Msg "Using icon location: $Path\icons\Microsoft365.png."
@@ -228,18 +236,25 @@ process {
         Write-Msg -Msg "Package description: $Description."
         $AppJson.Information.Description = $Description
 
-        # Read the product Ids from the XML, order in alphabetical order, update value in JSON
+        # Read the product Ids from the XML, order in alphabetical order, update ProductReleaseIds value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
         $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "ProductReleaseIds"))
-        Write-Msg -Msg "Update product release Ids for registry detection rule: $ProductReleaseIDs."
+        Write-Msg -Msg "Update registry ProductReleaseIds detection rule: $ProductReleaseIDs."
         $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
 
-        # Update the registry version number detection rule
+        # Update the registry VersionToReport version number detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
         $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel }
         $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "VersionToReport"))
-        Write-Msg -Msg "Update channel version number for registry detection rule: $($ChannelVersion.Version)."
+        Write-Msg -Msg "Update registry VersionToReport detection rule: $($ChannelVersion.Version)."
         $AppJson.DetectionRule[$Index].Value = $ChannelVersion.Version
+
+        # Update the registry SharedComputerLicensing detection rule
+        Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
+        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "SharedComputerLicensing"))
+        $Value = ($Xml.Configuration.Property | Where-Object { $_.Name -eq "SharedComputerLicensing" }).Value
+        Write-Msg -Msg "Update registry SharedComputerLicensing detection rule: $Value."
+        $AppJson.DetectionRule[$Index].Value = $Value
 
         # Output details back to the JSON file
         Write-Msg -Msg "Write updated App.json details back to: $Path\output\m365apps.json."
