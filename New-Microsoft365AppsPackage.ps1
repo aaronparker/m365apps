@@ -135,14 +135,20 @@ begin {
 process {
     #region Create working directories; Copy files for the package
     try {
-        Write-Msg -Msg "Create directories."
-        New-Item -Path "$Path\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        New-Item -Path "$Path\PSAppDeployToolkit\Toolkit\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+        Write-Msg -Msg "Create new package structure."
+        $OutputPath = "$Path\package"
+        Write-Msg -Msg "Using package path: $OutputPath"
+        New-Item -Path "$OutputPath\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+        New-Item -Path "$OutputPath\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
-        Write-Msg -Msg "Copy configuration files."
-        Copy-Item -Path $ConfigurationFile -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\Uninstall-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Path\PSAppDeployToolkit\Toolkit\Files\setup.exe"
+        Write-Msg -Msg "Copy PSAppDeployToolkit to: $OutputPath\source."
+        Copy-Item -Path "$Path\PSAppDeployToolkit\Toolkit\*" -Destination "$OutputPath\source" -Recurse
+        New-Item -Path "$OutputPath\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+
+        Write-Msg -Msg "Copy configuration files and setup.exe to package source."
+        Copy-Item -Path $ConfigurationFile -Destination "$OutputPath\source\Files\Install-Microsoft365Apps.xml"
+        Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$OutputPath\source\Files\Uninstall-Microsoft365Apps.xml"
+        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$OutputPath\source\Files\setup.exe"
     }
     catch {
         throw $_
@@ -151,7 +157,7 @@ process {
 
     #region Update the configuration.xml
     try {
-        $InstallXml = "$Path\PSAppDeployToolkit\Toolkit\Files\Install-Microsoft365Apps.xml"
+        $InstallXml = "$OutputPath\source\Files\Install-Microsoft365Apps.xml"
         Write-Msg -Msg "Read configuration file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
 
@@ -176,9 +182,9 @@ process {
     #region Create the intunewin package
     Write-Msg -Msg "Create intunewin package in: $Path\output."
     $params = @{
-        SourceFolder         = "$Path\PSAppDeployToolkit\Toolkit"
+        SourceFolder         = "$OutputPath\source"
         SetupFile            = "Files\setup.exe"
-        OutputFolder         = "$Path\output"
+        OutputFolder         = "$OutputPath\output"
         Force                = $true
         IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
     }
@@ -190,11 +196,11 @@ process {
         $SetupVersion = (Get-Item -Path "$Path\m365\setup.exe").VersionInfo.FileVersion
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
 
-        Write-Msg -Msg "Copy App.json to: $Path\output\m365apps.json."
-        Copy-Item -Path "$Path\scripts\App.json" -Destination "$Path\output\m365apps.json"
+        Write-Msg -Msg "Copy App.json to: $OutputPath\output\m365apps.json."
+        Copy-Item -Path "$Path\scripts\App.json" -Destination "$OutputPath\output\m365apps.json"
 
-        Write-Msg -Msg "Get content from: $Path\output\m365apps.json."
-        $AppJson = Get-Content -Path "$Path\output\m365apps.json" | ConvertFrom-Json
+        Write-Msg -Msg "Get content from: $OutputPath\output\m365apps.json."
+        $AppJson = Get-Content -Path "$OutputPath\output\m365apps.json" | ConvertFrom-Json
 
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
         $AppJson.PackageInformation.Version = $SetupVersion
@@ -270,7 +276,7 @@ process {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
 
         # Get the package file
-        $PackageFile = Get-ChildItem -Path "$Path\output" -Recurse -Include "setup.intunewin"
+        $PackageFile = Get-ChildItem -Path "$OutputPath\output" -Recurse -Include "setup.intunewin"
         if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
 
         if ($PSBoundParameters.ContainsKey("ClientId")) {
@@ -286,7 +292,7 @@ process {
         # Launch script to import the package
         Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
         $params = @{
-            Json        = "$Path\output\m365apps.json"
+            Json        = "$OutputPath\output\m365apps.json"
             PackageFile = $PackageFile.FullName
         }
         & "$Path\scripts\Create-Win32App.ps1" @params
