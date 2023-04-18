@@ -1,4 +1,4 @@
-<Configuration ID="5ba1990d-65f2-412c-92a1-66a9a0c2f67e">
+<Configuration ID="5028b46a-6503-420f-89ad-46d51283eaf6">
   <Info Description="Microsoft 365 Apps for enterprise 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams." />
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365ProPlusRetail">
