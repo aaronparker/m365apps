@@ -191,6 +191,11 @@ process {
     New-IntuneWin32AppPackage @params
     #endregion
 
+    # Save a copy of the modified configuration file to the output folder for reference
+    $OutputXml = "$OutputPath\output\$(Split-Path -Path $ConfigurationFile -Leaf)"
+    Write-Msg -Msg "Saved configuration file to: $OutputXml."
+    $Xml.Save($OutputXml)
+
     #region Create a new App.json for the package & update based on the setup.exe version & configuration.xml
     try {
         $SetupVersion = (Get-Item -Path "$Path\m365\setup.exe").VersionInfo.FileVersion
@@ -295,7 +300,7 @@ process {
             Json        = "$OutputPath\output\m365apps.json"
             PackageFile = $PackageFile.FullName
         }
-        & "$Path\scripts\Create-Win32App.ps1" @params
+        & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
     }
     #endregion
 }
