@@ -111,9 +111,11 @@ jobs:
           Import-Module -Name Evergreen
           $PsadtVersion = Get-EvergreenApp -Name "PSAppDeployToolkit" | Select-Object -ExpandProperty "Version"
 
-          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "setup=$SetupVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "psadt=$PsadtVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "filename=$FileName" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "channel=$Channel" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "setup=$SetupVersion" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "psadt=$PsadtVersion" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Upload artifacts
         id: upload-artifacts
@@ -132,6 +134,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Configuration file: ${{ github.event.inputs.configuration }}" >> $GITHUB_STEP_SUMMARY
           echo "- Company name: ${{ github.event.inputs.companyname }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Update channel: ${{ github.event.inputs.channel }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Update channel: ${{ steps.release.outputs.channel }}" >> $GITHUB_STEP_SUMMARY
           echo "- Setup.exe version: ${{ steps.release.outputs.setup }}" >> $GITHUB_STEP_SUMMARY
-          echo "- PSAppDeployToolkit version: ${{ steps.release.outputs.setup }}" >> $GITHUB_STEP_SUMMARY
+          echo "- PSAppDeployToolkit version: ${{ steps.release.outputs.psadt }}" >> $GITHUB_STEP_SUMMARY
