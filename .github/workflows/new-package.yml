@@ -100,7 +100,7 @@ jobs:
 
       - name: Set release parameters
         id: release
-        shell: powershell
+        shell: pwsh
         run: |
           $ConfigurationFile = Get-ChildItem -Path ${{ github.workspace }}\package\output\*.xml | Select-Object -First 1
           $FileName = [System.IO.Path]::GetFileNameWithoutExtension($ConfigurationFile)
