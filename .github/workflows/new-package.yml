@@ -145,9 +145,7 @@ jobs:
         if: steps.import-package.outcome == 'success'
         shell: pwsh
         run: | 
-          echo "## Package import" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          echo "" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          echo "Package imported into Intune :tada:" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          echo "## Package imported into Intune :tada:" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
       - name: Import failure
@@ -155,7 +153,5 @@ jobs:
         if: steps.import-package.outcome == 'failure'
         shell: pwsh
         run: | 
-          echo "## Package import" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          echo "" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-          echo "Package failed to into Intune :ng_man:" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          echo "## Package failed to into Intune :ng_man:" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
