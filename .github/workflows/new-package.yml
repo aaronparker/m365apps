@@ -107,7 +107,7 @@ jobs:
           [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
           $Channel = $Xml.Configuration.Add.Channel
           $Date = Get-Date -Format yyyyMMdd
-          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding Utf8 -Append
 
       - name: Upload artifacts
         id: upload-artifacts
