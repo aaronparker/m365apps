@@ -100,7 +100,8 @@ jobs:
 
       - name: Set release
         id: release
-        run: echo "release=$($(Get-Date -Format yyyyMMdd).${{ github.run_number }})" >> $GITHUB_OUTPUT
+        shell: powershell
+        run: echo "release=$(Get-Date -Format yyyyMMdd).${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Copy package
         id: copy-package
