@@ -102,13 +102,17 @@ jobs:
         id: release
         shell: powershell
         run: |
-          $FileName = Get-ChildItem -Path ${{ github.workspace }}\package\output\*.xml | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }
-          echo "release=$FileName.$(Get-Date -Format yyyyMMdd).${{ github.run_number }}" >> $GITHUB_OUTPUT
+          $ConfigurationFile = Get-ChildItem -Path ${{ github.workspace }}\package\output\*.xml | Select-Object -First 1
+          $FileName = [System.IO.Path]::GetFileNameWithoutExtension($ConfigurationFile)
+          [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
+          $Channel = $Xml.Configuration.Add.Channel
+          $Date = Get-Date -Format yyyyMMdd
+          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         id: upload-artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ steps.release.outputs.release }}
+          name: "${{ steps.release.outputs.release }}"
           path: |
             ${{ github.workspace }}/package/output/*
