@@ -277,7 +277,7 @@ process {
     #endregion
 
     #region Authn if authn parameters are passed; Import package into Intune
-    if ($PSBoundParameters.ContainsKey("Import")) {
+    if ($Import -eq $true) {
         Write-Msg -Msg "-Import specified. Importing package into tenant."
 
         # Get the package file

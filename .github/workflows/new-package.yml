@@ -111,9 +111,9 @@ jobs:
           Import-Module -Name Evergreen
           $PsadtVersion = Get-EvergreenApp -Name "PSAppDeployToolkit" | Select-Object -ExpandProperty "Version"
 
-          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding Utf8 -Append
-          echo "setup=$SetupVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding Utf8 -Append
-          echo "psadt=$PsadtVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding Utf8 -Append
+          echo "release=$FileName.$Channel.$Date.${{ github.run_number }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "setup=$SetupVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "psadt=$PsadtVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Upload artifacts
         id: upload-artifacts
