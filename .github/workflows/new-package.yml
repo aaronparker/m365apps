@@ -113,6 +113,6 @@ jobs:
         id: upload-artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: "${{ steps.release.outputs.release }}"
+          name: "m365-${{ steps.release.outputs.release }}"
           path: |
             ${{ github.workspace }}/package/output/*
