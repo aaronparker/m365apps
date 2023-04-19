@@ -1,5 +1,5 @@
 #Requires -PSEdition Desktop
-#Requires -Modules Evergreen, MSAL.PS, PSIntuneAuth, AzureAD, IntuneWin32App, Microsoft.Graph.Intune
+#Requires -Modules Evergreen, MSAL.PS, IntuneWin32App
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.

@@ -56,7 +56,7 @@ jobs:
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v5.2
         with:
-          modules-to-cache: "Evergreen::, MSAL.PS::, PSIntuneAuth::, AzureAD::, IntuneWin32App::, Microsoft.Graph.Intune::"
+          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::"
           updatable: true
           shell: powershell
 

@@ -1,5 +1,5 @@
 ﻿#Requires -PSEdition Desktop
-#Requires -Modules IntuneWin32App
+#Requires -Modules MSAL.PS, IntuneWin32App
 <#
     .SYNOPSIS
         Create a Win32 app in Microsoft Intune based on input from app manifest file.
