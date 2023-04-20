@@ -93,8 +93,10 @@ jobs:
       # Format the date number for the commit message
       - name: Get date
         id: get-date
+        shell: pwsh
         run: |
-          echo "date=$(Get-Date -Format "yyyy.MM.dd")" >> $GITHUB_OUTPUT
+          $Date = Get-Date -Format yyyyMMdd
+          echo "date=$Date" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Commit changes
         id: commit
