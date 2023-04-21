@@ -108,13 +108,8 @@ begin {
         Write-Information @params
     }
 
-    try {
-        # Validate that the input file is XML
-        [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile
-    }
-    catch {
-        throw [System.Xml.XmlException]::New("Failed to read as XML: $ConfigurationFile")
-    }
+    # Validate that the input file is XML
+    [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile -ErrorAction "Stop"
 
     # Unblock all files in the repo
     Write-Msg -Msg "Unblock exe files in $Path."
@@ -126,17 +121,41 @@ begin {
         "$Path\configs\Uninstall-Microsoft365Apps.xml",
         "$Path\intunewin\IntuneWinAppUtil.exe",
         "$Path\m365\setup.exe",
+        "$Path\icons\Microsoft365.png",
         "$Path\scripts\App.json",
+        "$Path\scripts\Create-Win32App.ps1",
         "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe",
-        "$Path\icons\Microsoft365.png"
+        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe.config",
+        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitBanner.png",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitConfig.xml",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitExtensions.ps1",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitHelp.ps1",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitLogo.ico",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitLogo.png",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitMain.cs",
+        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitMain.ps1",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub03.vbs",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub07.vbs",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub10.vbs",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrubc2r.vbs",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub_O15msi.vbs",
+        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub_O16msi.vbs"
     ) | ForEach-Object { if (-not (Test-Path -Path $_)) { throw [System.IO.FileNotFoundException]::New("File not found: $_") } }
 }
 
 process {
     #region Create working directories; Copy files for the package
     try {
+        # Set output directory and ensure it is empty
+        $OutputP
+        ath = "$Path\package"
+        if ((Get-ChildItem -Path $OutputPath -Recurse -File).Count -gt 0) {
+            Write-Warning -Message "'$OutputPath' is not empty. Remove path and try again."
+            return
+        }
+
         Write-Msg -Msg "Create new package structure."
-        $OutputPath = "$Path\package"
         Write-Msg -Msg "Using package path: $OutputPath"
         New-Item -Path "$OutputPath\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$OutputPath\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
