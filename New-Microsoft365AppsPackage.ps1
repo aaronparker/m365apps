@@ -148,8 +148,7 @@ process {
     #region Create working directories; Copy files for the package
     try {
         # Set output directory and ensure it is empty
-        $OutputP
-        ath = "$Path\package"
+        $OutputPath = "$Path\package"
         if ((Get-ChildItem -Path $OutputPath -Recurse -File).Count -gt 0) {
             Write-Warning -Message "'$OutputPath' is not empty. Remove path and try again."
             return
