@@ -4,6 +4,8 @@ A PowerShell script and GitHub Actions workflow for creating a Microsoft Intune 
 
 ![The Microsoft 365 Apps package imported into Intune](.img/intune-package.png)
 
+For full details on how to use this solution see: [An Intune Package Factory for the Microsoft 365 Apps](https://stealthpuppy.com/m365apps-package-factory/).
+
 ## Configuration Files
 
 Microsoft 365 Apps configuration files are included in this repository - these files can be used to create packages for any target tenant as some key options will be updated dynamically by this solution. 
