@@ -50,7 +50,11 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
-          if (-not (Test-Path -Path "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}")) { throw "Could not find configration file: ${{ github.event.inputs.configuration }}" }
+          $params = @{
+            Path     = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+            PathType = "Leaf"
+          }
+          if (-not (Test-Path @params)) { throw "Could not find configration file: ${{ github.event.inputs.configuration }}" }
 
       - name: Install and cache PowerShell modules
         id: psmodulecache
