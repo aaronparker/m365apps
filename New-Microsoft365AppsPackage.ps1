@@ -64,13 +64,13 @@
 param(
     [Parameter(Mandatory = $false, HelpMessage = "Path to the top level directory of the repository.")]
     [ValidateNotNullOrEmpty()]
-    [ValidateScript({ Test-Path -Path $_ })]
+    [ValidateScript({ if (-not(Test-Path -Path $_ -PathType "Container")) { throw "Path not found: '$_'" } })]
     [System.String] $Path = $PSScriptRoot,
 
     [Parameter(Mandatory = $true, HelpMessage = "Path to the Microsoft 365 Apps package configuration file.")]
     [ValidateNotNullOrEmpty()]
-    [ValidateScript({ Test-Path -Path $_ })]
-    [ValidateScript({ (Get-Item -Path $_).Extension -eq ".xml" })]
+    [ValidateScript({ if (-not(Test-Path -Path $_ -PathType "Container")) { throw "Path not found: '$_'" } })]
+    [ValidateScript({ if (-not((Get-Item -Path $_).Extension -eq ".xml")) { throw "File not not an XML file: '$_'" } })]
     [System.String] $ConfigurationFile,
 
     [Parameter(Mandatory = $false, HelpMessage = "Microsoft 365 Apps release channel.")]
