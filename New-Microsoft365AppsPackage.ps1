@@ -332,6 +332,7 @@ process {
             PackageFile = $PackageFile.FullName
         }
         & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
+        Write-Msg -Msg "Package import complete."
     }
     #endregion
 }
