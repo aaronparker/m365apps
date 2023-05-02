@@ -1,5 +1,6 @@
 #Requires -PSEdition Desktop
 #Requires -Modules Evergreen, MSAL.PS, IntuneWin32App
+using namespace System.Management.Automation
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
@@ -69,7 +70,7 @@ param(
 
     [Parameter(Mandatory = $true, HelpMessage = "Path to the Microsoft 365 Apps package configuration file.")]
     [ValidateNotNullOrEmpty()]
-    [ValidateScript({ if (Test-Path -Path $_ -PathType "Container") { $true } else { throw "Path not found: '$_'" } })]
+    [ValidateScript({ if (Test-Path -Path $_ -PathType "Leaf") { $true } else { throw "Path not found: '$_'" } })]
     [ValidateScript({ if ((Get-Item -Path $_).Extension -eq ".xml") { $true } else { throw "File not not an XML file: '$_'" } })]
     [System.String] $ConfigurationFile,
 
@@ -82,7 +83,7 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
-    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
+    [Parameter(Mandatory = $false, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
     [ValidateNotNullOrEmpty()]
     [System.String] $TenantId,
 
@@ -100,8 +101,20 @@ param(
 
 begin {
     function Write-Msg ($Msg) {
+        $Message = [HostInformationMessage]@{
+            Message         = "[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')]"
+            ForegroundColor = "Black"
+            BackgroundColor = "DarkCyan"
+            NoNewline       = $true
+        }
         $params = @{
-            MessageData       = "`e[7;32m[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')]`e[0m $Msg"
+            MessageData       = $Message
+            InformationAction = "Continue"
+            Tags              = "Microsoft365"
+        }
+        Write-Information @params
+        $params = @{
+            MessageData       = " $Msg"
             InformationAction = "Continue"
             Tags              = "Microsoft365"
         }
