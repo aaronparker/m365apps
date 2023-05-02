@@ -83,12 +83,14 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
-    [Parameter(Mandatory = $false, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
+    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
     [ValidateNotNullOrEmpty()]
+    [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($TenantId, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $TenantId,
 
     [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Azure AD app registration.")]
     [ValidateNotNullOrEmpty()]
+    [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($TenantId, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $ClientId,
 
     [Parameter(Mandatory = $false, HelpMessage = "Client secret used to authenticate against the app registration.")]
