@@ -101,7 +101,7 @@ param(
 begin {
     function Write-Msg ($Msg) {
         $params = @{
-            MessageData       = "[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')] $Msg"
+            MessageData       = "`e[7;32m[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')]`e[0m $Msg"
             InformationAction = "Continue"
             Tags              = "Microsoft365"
         }
