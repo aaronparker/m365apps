@@ -39,6 +39,9 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Specify to validate manifest file configuration.")]
     [System.Management.Automation.SwitchParameter] $Validate
 )
+
+begin {}
+
 process {
     # Read app data from JSON manifest
     $AppData = Get-Content -Path $Json | ConvertFrom-Json
@@ -430,26 +433,34 @@ process {
         $Icon = New-IntuneWin32AppIcon -FilePath $AppIconFile
     }
 
+    # Create a Notes property with identifying information
+    $Notes = [PSCustomObject] @{
+        "CreatedBy" = "PSPackageFactory"
+        "Guid"      = $AppData.Information.PSPackageFactoryGuid
+        "Date"      = $(Get-Date -Format "yyyy-MM-dd")
+    } | ConvertTo-Json -Compress
+
     # Construct a table of default parameters for Win32 app
     $Win32AppArgs = @{
         "FilePath"                 = $PackageFile
         "DisplayName"              = $AppData.Information.DisplayName
         "Description"              = $AppData.Information.Description
         "AppVersion"               = $AppData.PackageInformation.Version
+        "Notes"                    = $Notes
         "Publisher"                = $AppData.Information.Publisher
         "Developer"                = $AppData.Information.Publisher
         "InformationURL"           = $AppData.Information.InformationURL
         "PrivacyURL"               = $AppData.Information.PrivacyURL
-        "CategoryName"             = "Productivity"
         "CompanyPortalFeaturedApp" = $false
         "InstallExperience"        = $AppData.Program.InstallExperience
         "RestartBehavior"          = $AppData.Program.DeviceRestartBehavior
         "DetectionRule"            = $DetectionRules
         "RequirementRule"          = $RequirementRule
+        #"UseAzCopy"                = $true
     }
 
     # Dynamically add additional parameters for Win32 app
-    if ($Null -ne $RequirementRules) {
+    if ($null -ne $RequirementRules) {
         $Win32AppArgs.Add("AdditionalRequirementRule", $RequirementRules)
     }
     if (Test-Path -Path $AppIconFile) {
@@ -457,6 +468,9 @@ process {
     }
     if (-not([System.String]::IsNullOrEmpty($AppData.Information.Notes))) {
         $Win32AppArgs.Add("Notes", $AppData.Information.Notes)
+    }
+    if (-not([System.String]::IsNullOrEmpty($AppData.Information.Categories))) {
+        $Win32AppArgs.Add("CategoryName", $AppData.Information.Categories)
     }
     if (-not([System.String]::IsNullOrEmpty($AppData.Program.InstallCommand))) {
         $Win32AppArgs.Add("InstallCommandLine", $AppData.Program.InstallCommand)
@@ -476,6 +490,61 @@ process {
     }
     else {
         # Create Win32 app
-        Add-IntuneWin32App @Win32AppArgs
+        $Win32App = Add-IntuneWin32App @Win32AppArgs
+
+        # Add assignments
+        if ($AppData.Assignments.Count -ge 1) {
+            foreach ($Assignment in $AppData.Assignments) {
+
+                # Construct the assignment arguments
+                $AssignmentArgs = @{
+                    "ID"           = $Win32App.id
+                    "Intent"       = $Assignment.Intent
+                    "Notification" = $Assignment.Notification
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.DeliveryOptimizationPriority))) {
+                    $AssignmentArgs.Add("DeliveryOptimizationPriority", $Assignment.DeliveryOptimizationPriority)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.EnableRestartGracePeriod))) {
+                    $AssignmentArgs.Add("EnableRestartGracePeriod", $Assignment.EnableRestartGracePeriod)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.RestartGracePeriod))) {
+                    $AssignmentArgs.Add("RestartGracePeriod", $Assignment.RestartGracePeriod)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.RestartCountDownDisplay))) {
+                    $AssignmentArgs.Add("RestartCountDownDisplay", $Assignment.RestartCountDownDisplay)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.RestartNotificationSnooze))) {
+                    $AssignmentArgs.Add("RestartNotificationSnooze", $Assignment.RestartNotificationSnooze)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.AvailableTime))) {
+                    $AssignmentArgs.Add("AvailableTime", $Assignment.AvailableTime)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.DeadlineTime))) {
+                    $AssignmentArgs.Add("DeadlineTime", $Assignment.DeadlineTime)
+                }
+                if (-not([System.String]::IsNullOrEmpty($Assignment.UseLocalTime))) {
+                    $AssignmentArgs.Add("UseLocalTime", $Assignment.UseLocalTime)
+                }
+
+                switch ($Assignment.Type) {
+                    "AllDevices" {
+                        [void](Add-IntuneWin32AppAssignmentAllDevices @AssignmentArgs)
+                    }
+                    "AllUsers" {
+                        [void](Add-IntuneWin32AppAssignmentAllUsers @AssignmentArgs)
+                    }
+                    "Group" {
+                        $AssignmentArgs.Add("GroupID", $Assignment.GroupID)
+                        [void](Add-IntuneWin32AppAssignmentGroup @AssignmentArgs -Include)
+                    }
+                }
+            }
+        }
+
+        # Output application package details
+        Get-IntuneWin32App -ID $Win32App.id
     }
 }
+
+end {}
