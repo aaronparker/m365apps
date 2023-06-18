@@ -238,10 +238,10 @@ process {
         Copy-Item -Path "$Path\scripts\App.json" -Destination "$OutputPath\output\m365apps.json"
 
         Write-Msg -Msg "Get content from: $OutputPath\output\m365apps.json."
-        $AppJson = Get-Content -Path "$OutputPath\output\m365apps.json" | ConvertFrom-Json
+        $Manifest = Get-Content -Path "$OutputPath\output\m365apps.json" | ConvertFrom-Json
 
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
-        $AppJson.PackageInformation.Version = $SetupVersion
+        $Manifest.PackageInformation.Version = $SetupVersion
 
         Write-Msg -Msg "Read configuration xml file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
@@ -269,74 +269,124 @@ process {
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { $DisplayName = "$DisplayName, x64" }
         if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
         Write-Msg -Msg "Package display name: $DisplayName."
-        $AppJson.Information.DisplayName = $DisplayName
+        $Manifest.Information.DisplayName = $DisplayName
+
+        # Set the PSPackageFactory GUID to the GUID in the configuration.xml
+        # This allows us to track the app via the configuration ID once imported into Intune
+        $Manifest.Information.PSPackageFactoryGuid = $Xml.Configuration.ID
 
         # Update icon location
         Write-Msg -Msg "Using icon location: $Path\icons\Microsoft365.png."
-        $AppJson.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
+        $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
 
         # Update package description
         $Description = "$($xml.Configuration.Info.Description)`n`n**This package will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
         Write-Msg -Msg "Package description: $Description."
-        $AppJson.Information.Description = $Description
+        $Manifest.Information.Description = $Description
 
         # Read the product Ids from the XML, order in alphabetical order, update ProductReleaseIds value in JSON
         $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
-        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "ProductReleaseIds"))
+        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "ProductReleaseIds"))
         Write-Msg -Msg "Update registry ProductReleaseIds detection rule: $ProductReleaseIDs."
-        $AppJson.DetectionRule[$Index].Value = $ProductReleaseIDs
+        $Manifest.DetectionRule[$Index].Value = $ProductReleaseIDs
 
         # Update the registry VersionToReport version number detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
         $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel }
-        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "VersionToReport"))
+        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "VersionToReport"))
         Write-Msg -Msg "Update registry VersionToReport detection rule: $($ChannelVersion.Version)."
-        $AppJson.DetectionRule[$Index].Value = $ChannelVersion.Version
+        $Manifest.DetectionRule[$Index].Value = $ChannelVersion.Version
 
         # Update the registry SharedComputerLicensing detection rule
         Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
-        $Index = $AppJson.DetectionRule.IndexOf($($AppJson.DetectionRule -cmatch "SharedComputerLicensing"))
+        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "SharedComputerLicensing"))
         $Value = ($Xml.Configuration.Property | Where-Object { $_.Name -eq "SharedComputerLicensing" }).Value
         Write-Msg -Msg "Update registry SharedComputerLicensing detection rule: $Value."
-        $AppJson.DetectionRule[$Index].Value = $Value
+        $Manifest.DetectionRule[$Index].Value = $Value
 
         # Output details back to the JSON file
         Write-Msg -Msg "Write updated App.json details back to: $OutputPath\output\m365apps.json."
-        $AppJson | ConvertTo-Json | Out-File -FilePath "$OutputPath\output\m365apps.json" -Force
+        $Manifest | ConvertTo-Json | Out-File -FilePath "$OutputPath\output\m365apps.json" -Force
     }
     catch {
         throw $_
     }
     #endregion
 
-    #region Authn if authn parameters are passed; Import package into Intune
-    if ($Import -eq $true) {
-        Write-Msg -Msg "-Import specified. Importing package into tenant."
+    #region Lets see if this application is already in Intune and needs to be updated
+    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+    Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
+    $ExistingApp = Get-IntuneWin32App | `
+        Select-Object -Property * -ExcludeProperty "largeIcon" | `
+        Where-Object { $_.notes -match "PSPackageFactory" } | `
+        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
+        Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
+        Select-Object -First 1
 
-        # Get the package file
-        $PackageFile = Get-ChildItem -Path "$OutputPath\output" -Recurse -Include "setup.intunewin"
-        if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
-
-        if ($PSBoundParameters.ContainsKey("ClientId")) {
-            $params = @{
-                TenantId     = $TenantId
-                ClientId     = $ClientId
-                ClientSecret = $ClientSecret
-            }
-            Write-Msg -Msg "Authenticate to tenant: $TenantId."
-            [Void](Connect-MSIntuneGraph @params)
-        }
-
-        # Launch script to import the package
-        Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
-        $params = @{
-            Json        = "$OutputPath\output\m365apps.json"
-            PackageFile = $PackageFile.FullName
-        }
-        & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
-        Write-Msg -Msg "Package import complete."
+    # Determine whether the new package should be imported
+    if ($null -eq $ExistingApp) {
+        Write-Msg -Msg "Import new application: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
+        $UpdateApp = $true
+    }
+    elseif ([System.String]::IsNullOrEmpty($ExistingApp.displayVersion)) {
+        Write-Msg -Msg "Found matching app but `displayVersion` is null: '$($ExistingApp.displayName)'"
+        $UpdateApp = $false
+    }
+    elseif ($Manifest.PackageInformation.Version -le $ExistingApp.displayVersion) {
+        Write-Msg -Msg "Existing Intune app version is current: '$($ExistingApp.displayName), $($ExistingApp.displayVersion)'"
+        $UpdateApp = $false
+    }
+    elseif ($Manifest.PackageInformation.Version -gt $ExistingApp.displayVersion) {
+        Write-Msg -Msg "Import application version: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
+        $UpdateApp = $true
     }
     #endregion
+
+    if ($UpdateApp -eq $true -or $Force -eq $true) {
+        if ($Import -eq $true) {
+            #region Authn if authn parameters are passed; Import package into Intune
+            Write-Msg -Msg "-Import specified. Importing package into tenant."
+
+            # Get the package file
+            $PackageFile = Get-ChildItem -Path "$OutputPath\output" -Recurse -Include "setup.intunewin"
+            if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
+
+            if ($PSBoundParameters.ContainsKey("ClientId")) {
+                $params = @{
+                    TenantId     = $TenantId
+                    ClientId     = $ClientId
+                    ClientSecret = $ClientSecret
+                }
+                Write-Msg -Msg "Authenticate to tenant: $TenantId."
+                [Void](Connect-MSIntuneGraph @params)
+            }
+
+            # Launch script to import the package
+            Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
+            $params = @{
+                Json        = "$OutputPath\output\m365apps.json"
+                PackageFile = $PackageFile.FullName
+            }
+            $ImportedApp = & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
+            Write-Msg -Msg "Package import complete."
+            #endregion
+
+            #region Add supersedence for existing packages
+            Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+            $Supersedence = Get-IntuneWin32App | `
+                Where-Object { $_.id -ne $ImportedApp.id } | `
+                Where-Object { $_.notes -match "PSPackageFactory" } | `
+                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
+                Select-Object -Property * -ExcludeProperty "largeIcon" | `
+                Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
+                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType Update }
+            Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
+            #endregion
+
+            # Output imported application details
+            $ImportedApp
+        }
+    }
 }
 
 end {

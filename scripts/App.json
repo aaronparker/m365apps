@@ -1,59 +1,77 @@
 {
-  "PackageInformation": {
-    "SetupType": "EXE",
-    "SetupFile": "Setup.exe",
-    "Version": "16.0.16501.20140",
-    "SourceFolder": "Source",
-    "OutputFolder": "Package",
-    "IconFile": "https://github.com/aaronparker/icons/raw/main/companyportal/Microsoft365.png"
-  },
-  "Information": {
-    "DisplayName": "Microsoft 365 Apps, Current channel, x64",
-    "Description": "Microsoft 365 Apps for the Windows desktop including Microsoft Word, Excel, PowerPoint, Outlook etc.",
-    "Publisher": "Microsoft",
-    "InformationURL": "https://www.microsoft365.com/",
-    "PrivacyURL": "https://privacy.microsoft.com/en-US/privacystatement",
-    "Notes": "Package created with: https://github.com/aaronparker/m365apps"
-  },
-  "Program": {
-    "InstallCommand": "Deploy-Application.exe -DeploymentType \"Install\" -DeployMode \"Silent\"",
-    "UninstallCommand": "Deploy-Application.exe -DeploymentType \"Uninstall\" -DeployMode \"Silent\"",
-    "InstallExperience": "system",
-    "DeviceRestartBehavior": "basedOnReturnCode"
-  },
-  "RequirementRule": {
-    "MinimumRequiredOperatingSystem": "W10_1809",
-    "Architecture": "x64",
-    "SizeInMBValue": "5120"
-  },
-  "CustomRequirementRule": [],
-  "DetectionRule": [
-    {
-      "Type": "Registry",
-      "DetectionMethod": "VersionComparison",
-      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
-      "ValueName": "VersionToReport",
-      "Operator": "greaterThanOrEqual",
-      "Value": "16.0.15726.20262",
-      "Check32BitOn64System": "false"
+    "PackageInformation": {
+        "SetupType": "EXE",
+        "SetupFile": "Setup.exe",
+        "Version": "16.0.16501.20140",
+        "SourceFolder": "Source",
+        "OutputFolder": "Package",
+        "IconFile": "https://github.com/aaronparker/icons/raw/main/companyportal/Microsoft365.png"
     },
-    {
-      "Type": "Registry",
-      "DetectionMethod": "StringComparison",
-      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
-      "ValueName": "ProductReleaseIds",
-      "Operator": "equal",
-      "Value": "O365ProPlusRetail,ProjectProRetail,VisioProRetail",
-      "Check32BitOn64System": "false"
+    "Information": {
+        "DisplayName": "Microsoft 365 Apps, Current channel, x64",
+        "Description": "Microsoft 365 Apps for the Windows desktop including Microsoft Word, Excel, PowerPoint, Outlook etc.",
+        "Publisher": "Microsoft",
+        "InformationURL": "https://www.microsoft365.com/",
+        "PrivacyURL": "https://privacy.microsoft.com/en-US/privacystatement",
+        "Notes": "Package created with: https://github.com/aaronparker/m365apps",
+        "FeaturedApp": false,
+        "Categories": [
+            "Productivity"
+        ],
+        "PSPackageFactoryGuid": "10e1754d-fa0f-4788-b709-df481c015a7e"
     },
-    {
-      "Type": "Registry",
-      "DetectionMethod": "StringComparison",
-      "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
-      "ValueName": "SharedComputerLicensing",
-      "Operator": "equal",
-      "Value": "0",
-      "Check32BitOn64System": "false"
-    }
-  ]
+    "Program": {
+        "InstallCommand": "Deploy-Application.exe -DeploymentType \"Install\" -DeployMode \"Silent\"",
+        "UninstallCommand": "Deploy-Application.exe -DeploymentType \"Uninstall\" -DeployMode \"Silent\"",
+        "InstallExperience": "system",
+        "DeviceRestartBehavior": "basedOnReturnCode"
+    },
+    "RequirementRule": {
+        "MinimumRequiredOperatingSystem": "W10_1809",
+        "Architecture": "x64",
+        "SizeInMBValue": "5120"
+    },
+    "CustomRequirementRule": [],
+    "DetectionRule": [
+        {
+            "Type": "Registry",
+            "DetectionMethod": "VersionComparison",
+            "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+            "ValueName": "VersionToReport",
+            "Operator": "greaterThanOrEqual",
+            "Value": "16.0.15726.20262",
+            "Check32BitOn64System": "false"
+        },
+        {
+            "Type": "Registry",
+            "DetectionMethod": "StringComparison",
+            "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+            "ValueName": "ProductReleaseIds",
+            "Operator": "equal",
+            "Value": "O365ProPlusRetail,ProjectProRetail,VisioProRetail",
+            "Check32BitOn64System": "false"
+        },
+        {
+            "Type": "Registry",
+            "DetectionMethod": "StringComparison",
+            "KeyPath": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration",
+            "ValueName": "SharedComputerLicensing",
+            "Operator": "equal",
+            "Value": "0",
+            "Check32BitOn64System": "false"
+        }
+    ],
+    "Dependencies": [],
+    "Supersedence": [],
+    "Assignments": [
+        {
+            "Type": "AllUsers",
+            "Intent": "available",
+            "Notification": "showAll",
+            "EnableRestartGracePeriod": true,
+            "RestartGracePeriod": 1440,
+            "RestartCountDownDisplay": 15,
+            "RestartNotificationSnooze": 240
+        }
+    ]
 }
