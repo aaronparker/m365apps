@@ -271,6 +271,10 @@ process {
         Write-Msg -Msg "Package display name: $DisplayName."
         $Manifest.Information.DisplayName = $DisplayName
 
+        # Set the PSPackageFactory GUID to the GUID in the configuration.xml
+        # This allows us to track the app via the configuration ID once imported into Intune
+        $Manifest.Information.PSPackageFactoryGuid = $Xml.Configuration.ID
+
         # Update icon location
         Write-Msg -Msg "Using icon location: $Path\icons\Microsoft365.png."
         $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
@@ -310,7 +314,7 @@ process {
     #endregion
 
     #region Lets see if this application is already in Intune and needs to be updated
-    Write-Msg -Msg "Retrieve existing Win32 applications in Intune"
+    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
     Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
     $ExistingApp = Get-IntuneWin32App | `
         Select-Object -Property * -ExcludeProperty "largeIcon" | `
@@ -318,10 +322,10 @@ process {
         Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
         Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
         Select-Object -First 1
-    
+
     # Determine whether the new package should be imported
     if ($null -eq $ExistingApp) {
-        Write-Msg -Msg "Import new application: '$($Manifest.Information.DisplayName)'"
+        Write-Msg -Msg "Import new application: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
         $UpdateApp = $true
     }
     elseif ([System.String]::IsNullOrEmpty($ExistingApp.displayVersion)) {
@@ -329,18 +333,18 @@ process {
         $UpdateApp = $false
     }
     elseif ($Manifest.PackageInformation.Version -le $ExistingApp.displayVersion) {
-        Write-Msg -Msg "Existing Intune app version is current: '$($ExistingApp.displayName)'"
+        Write-Msg -Msg "Existing Intune app version is current: '$($ExistingApp.displayName), $($ExistingApp.displayVersion)'"
         $UpdateApp = $false
     }
     elseif ($Manifest.PackageInformation.Version -gt $ExistingApp.displayVersion) {
-        Write-Msg -Msg "Import application version: '$($Manifest.Information.DisplayName)'"
+        Write-Msg -Msg "Import application version: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
         $UpdateApp = $true
     }
     #endregion
 
-    #region Authn if authn parameters are passed; Import package into Intune
     if ($UpdateApp -eq $true -or $Force -eq $true) {
         if ($Import -eq $true) {
+            #region Authn if authn parameters are passed; Import package into Intune
             Write-Msg -Msg "-Import specified. Importing package into tenant."
 
             # Get the package file
@@ -363,11 +367,26 @@ process {
                 Json        = "$OutputPath\output\m365apps.json"
                 PackageFile = $PackageFile.FullName
             }
-            & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
+            $ImportedApp = & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
             Write-Msg -Msg "Package import complete."
+            #endregion
+
+            #region Add supersedence for existing packages
+            Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+            $Supersedence = Get-IntuneWin32App | `
+                Where-Object { $_.id -ne $ImportedApp.id } | `
+                Where-Object { $_.notes -match "PSPackageFactory" } | `
+                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
+                Select-Object -Property * -ExcludeProperty "largeIcon" | `
+                Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
+                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType Update }
+            Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
+            #endregion
+
+            # Output imported application details
+            $ImportedApp
         }
     }
-    #endregion
 }
 
 end {

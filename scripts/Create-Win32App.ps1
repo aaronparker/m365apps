@@ -466,9 +466,6 @@ process {
     if (Test-Path -Path $AppIconFile) {
         $Win32AppArgs.Add("Icon", $Icon)
     }
-    if (-not([System.String]::IsNullOrEmpty($AppData.Information.Notes))) {
-        $Win32AppArgs.Add("Notes", $AppData.Information.Notes)
-    }
     if (-not([System.String]::IsNullOrEmpty($AppData.Information.Categories))) {
         $Win32AppArgs.Add("CategoryName", $AppData.Information.Categories)
     }
