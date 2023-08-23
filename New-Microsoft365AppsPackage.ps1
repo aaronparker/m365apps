@@ -36,7 +36,7 @@ using namespace System.Management.Automation
         Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
         $params = @{
             Path              = E:\project\m365Apps
-            ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
+            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
             Channel           = Current
             CompanyName       = stealthpuppy
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
@@ -313,6 +313,18 @@ process {
     }
     #endregion
 
+    #region Authn to the Microsoft Graph
+    if ($PSBoundParameters.ContainsKey("ClientId")) {
+        $params = @{
+            TenantId     = $TenantId
+            ClientId     = $ClientId
+            ClientSecret = $ClientSecret
+        }
+        Write-Msg -Msg "Authenticate to tenant: $TenantId."
+        [Void](Connect-MSIntuneGraph @params)
+    }
+    #endregion
+
     #region Lets see if this application is already in Intune and needs to be updated
     Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
     Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
@@ -350,16 +362,6 @@ process {
             # Get the package file
             $PackageFile = Get-ChildItem -Path "$OutputPath\output" -Recurse -Include "setup.intunewin"
             if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
-
-            if ($PSBoundParameters.ContainsKey("ClientId")) {
-                $params = @{
-                    TenantId     = $TenantId
-                    ClientId     = $ClientId
-                    ClientSecret = $ClientSecret
-                }
-                Write-Msg -Msg "Authenticate to tenant: $TenantId."
-                [Void](Connect-MSIntuneGraph @params)
-            }
 
             # Launch script to import the package
             Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
