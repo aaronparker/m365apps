@@ -381,8 +381,10 @@ process {
                 Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
                 Select-Object -Property * -ExcludeProperty "largeIcon" | `
                 Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
-                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType Update }
-            Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
+                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
+            if ($null -ne $Supersedence) {
+                Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
+            }
             #endregion
 
             # Output imported application details
