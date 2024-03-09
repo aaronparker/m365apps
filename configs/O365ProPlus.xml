@@ -19,7 +19,7 @@
   <Updates Enabled="TRUE" />
   <RemoveMSI />
   <AppSettings>
-    <Setup Name="Company" Value="stealthpuppy" />
+    <Setup Name="Company" Value="#Company" />
     <User Key="software\microsoft\office\16.0\common\toolbars" Name="customuiroaming" Value="1" Type="REG_DWORD" App="office16" Id="L_AllowRoamingQuickAccessToolBarRibbonCustomizations" />
     <User Key="software\microsoft\office\16.0\common\general" Name="shownfirstrunoptin" Value="1" Type="REG_DWORD" App="office16" Id="L_DisableOptinWizard" />
     <User Key="software\microsoft\office\16.0\common\languageresources" Name="installlanguage" Value="3081" Type="REG_DWORD" App="office16" Id="L_PrimaryEditingLanguage" />

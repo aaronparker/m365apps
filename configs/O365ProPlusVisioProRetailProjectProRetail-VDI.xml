@@ -1,4 +1,4 @@
-<Configuration ID="d5d79014-e5ee-4b48-ae9a-a9dee94af80a">
+<Configuration ID="a77eabaf-1fcc-4be7-90e2-03085d2c117b">
   <Info Description="Microsoft 365 Apps for enterprise 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams, Visio and Project. Configured with shared computer licensing and hardware acceleration configured for virtual desktop environments." />
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365ProPlusRetail">
@@ -6,10 +6,10 @@
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="OneDrive" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Lync" />
+      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="Bing" />
     </Product>
     <Product ID="VisioProRetail">
@@ -17,10 +17,10 @@
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="OneDrive" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Lync" />
+      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="Bing" />
     </Product>
     <Product ID="ProjectProRetail">
@@ -28,10 +28,10 @@
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="OneDrive" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Lync" />
+      <ExcludeApp ID="Teams" />
       <ExcludeApp ID="Bing" />
     </Product>
   </Add>
@@ -43,7 +43,7 @@
   <Updates Enabled="FALSE" />
   <RemoveMSI />
   <AppSettings>
-    <Setup Name="Company" Value="stealthpuppy" />
+    <Setup Name="Company" Value="#Company" />
     <User Key="software\microsoft\office\16.0\common\toolbars" Name="customuiroaming" Value="1" Type="REG_DWORD" App="office16" Id="L_AllowRoamingQuickAccessToolBarRibbonCustomizations" />
     <User Key="software\microsoft\office\16.0\common\general" Name="shownfirstrunoptin" Value="1" Type="REG_DWORD" App="office16" Id="L_DisableOptinWizard" />
     <User Key="software\microsoft\office\16.0\common\languageresources" Name="installlanguage" Value="3081" Type="REG_DWORD" App="office16" Id="L_PrimaryEditingLanguage" />
@@ -53,7 +53,8 @@
     <User Key="software\microsoft\office\16.0\firstrun" Name="disablemovie" Value="1" Type="REG_DWORD" App="office16" Id="L_DisableMovie" />
     <User Key="software\microsoft\office\16.0\firstrun" Name="bootedrtm" Value="1" Type="REG_DWORD" App="office16" Id="L_DisableOfficeFirstrun" />
     <User Key="software\microsoft\office\16.0\common" Name="default ui theme" Value="0" Type="REG_DWORD" App="office16" Id="L_DefaultUIThemeUser" />
-    <User Key="software\microsoft\office\16.0\excel\options" Name="defaultformat" Value="51" Type="REG_DWORD" App="excel16" Id="L_SaveExcelfilesas" />
+    <User Key="software\microsoft\office\16.0\excel\options" Name="defaultformat" Value="51" Type="REG_SZ" App="excel16" Id="L_SaveExcelfilesas" />
+    <User Key="software\microsoft\office\16.0\onenote\options\save" Name="backupnumberofbackupstokeep" Value="0" Type="REG_DWORD" App="onent16" Id="L_Numberofbackupcopiestokeep" />
     <User Key="software\microsoft\office\16.0\onenote\options\other" Name="runsystemtrayapp" Value="0" Type="REG_DWORD" App="onent16" Id="L_AddOneNoteicontonotificationarea" />
     <User Key="software\microsoft\office\16.0\outlook\preferences" Name="disablemanualarchive" Value="1" Type="REG_DWORD" App="outlk16" Id="L_DisableFileArchive" />
     <User Key="software\microsoft\office\16.0\outlook\autodiscover" Name="zeroconfigexchange" Value="1" Type="REG_DWORD" App="outlk16" Id="L_AutomaticallyConfigureProfileBasedOnActive" />
