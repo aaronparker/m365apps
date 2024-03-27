@@ -11,7 +11,7 @@ PSApppDeployToolkit - This script performs the installation or uninstallation of
 
 The script dot-sources the AppDeployToolkitMain.ps1 script which contains the logic and functions required to install or uninstall an application.
 
-PSApppDeployToolkit is licensed under the GNU LGPLv3 License - (C) 2023 PSAppDeployToolkit Team (Sean Lillis, Dan Cunningham and Muhammad Mashwani).
+PSApppDeployToolkit is licensed under the GNU LGPLv3 License - (C) 2024 PSAppDeployToolkit Team (Sean Lillis, Dan Cunningham and Muhammad Mashwani).
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the
 Free Software Foundation, either version 3 of the License, or any later version. This program is distributed in the hope that it will be useful, but
@@ -99,19 +99,18 @@ Try {
     ## Set the script execution policy for this process
     Try {
         Set-ExecutionPolicy -ExecutionPolicy 'ByPass' -Scope 'Process' -Force -ErrorAction 'Stop'
-    }
-    Catch {
+    } Catch {
     }
 
     ##*===============================================
     ##* VARIABLE DECLARATION
     ##*===============================================
     ## Variables: Application
-    [String]$appVendor = 'Microsoft'
-    [String]$appName = 'Microsoft 365 Apps'
+    [String]$appVendor = ''
+    [String]$appName = ''
     [String]$appVersion = ''
-    [String]$appArch = 'x64'
-    [String]$appLang = 'en '
+    [String]$appArch = ''
+    [String]$appLang = 'EN'
     [String]$appRevision = '01'
     [String]$appScriptVersion = '1.0.0'
     [String]$appScriptDate = 'XX/XX/20XX'
@@ -129,8 +128,8 @@ Try {
 
     ## Variables: Script
     [String]$deployAppScriptFriendlyName = 'Deploy Application'
-    [Version]$deployAppScriptVersion = [Version]'3.9.2'
-    [String]$deployAppScriptDate = '02/02/2023'
+    [Version]$deployAppScriptVersion = [Version]'3.10.0'
+    [String]$deployAppScriptDate = '03/27/2024'
     [Hashtable]$deployAppScriptParameters = $PsBoundParameters
 
     ## Variables: Environment
@@ -188,19 +187,7 @@ Try {
         Show-InstallationProgress
 
         ## <Perform Pre-Installation tasks here>
-		## Remove Office 2013  MSI installations
-		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
-			Show-InstallationProgress "Uninstalling Microsoft Office 2013"
-			Write-Log "Microsoft Office 2013 was detected. Uninstalling..."
-			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
-		}
 
-		## Remove Office 2016 MSI installations
-		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
-			Show-InstallationProgress "Uninstalling Microsoft Office 2016"
-			Write-Log "Microsoft Office 2016 was detected. Uninstalling..."
-			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
-		}
 
         ##*===============================================
         ##* INSTALLATION
@@ -218,8 +205,7 @@ Try {
         }
 
         ## <Perform Installation tasks here>
-		# Install Microsoft 365 Apps for Enterprise with content from the Office CDN
-		Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
+
 
         ##*===============================================
         ##* POST-INSTALLATION
@@ -246,8 +232,7 @@ Try {
         Show-InstallationProgress
 
         ## <Perform Pre-Uninstallation tasks here>
-		# Uninstall Microsoft 365 Apps for Enterprise
-		Execute-Process -Path "setup.exe" -Parameters "/configure Uninstall-Microsoft365Apps.xml"
+
 
         ##*===============================================
         ##* UNINSTALLATION
