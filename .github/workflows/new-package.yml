@@ -58,7 +58,7 @@ jobs:
 
       - name: Install and cache PowerShell modules
         id: psmodulecache
-        uses: potatoqualitee/psmodulecache@v6.0
+        uses: potatoqualitee/psmodulecache@v6.2
         with:
           modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::"
           updatable: true
