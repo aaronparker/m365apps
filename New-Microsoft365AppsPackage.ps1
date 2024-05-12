@@ -169,15 +169,20 @@ process {
             return
         }
 
+        # Create the package directory structure
         Write-Msg -Msg "Create new package structure."
         Write-Msg -Msg "Using package path: $OutputPath"
         New-Item -Path "$OutputPath\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$OutputPath\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
+        # Copy the PSAppDeployToolkit files to the package source
+        # Copy the customised Deploy-Application.ps1 to the package source
         Write-Msg -Msg "Copy PSAppDeployToolkit to: $OutputPath\source."
         Copy-Item -Path "$Path\PSAppDeployToolkit\Toolkit\*" -Destination "$OutputPath\source" -Recurse
         New-Item -Path "$OutputPath\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+        Copy-Item -Path "$Path\scripts\Deploy-Application.ps1" -Destination "$OutputPath\source\Deploy-Application.ps1"
 
+        # Copy the configuration files and setup.exe to the package source
         Write-Msg -Msg "Copy configuration files and setup.exe to package source."
         Copy-Item -Path $ConfigurationFile -Destination "$OutputPath\source\Files\Install-Microsoft365Apps.xml"
         Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$OutputPath\source\Files\Uninstall-Microsoft365Apps.xml"
