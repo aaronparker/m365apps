@@ -180,7 +180,8 @@ process {
         Write-Msg -Msg "Copy PSAppDeployToolkit to: $OutputPath\source."
         Copy-Item -Path "$Path\PSAppDeployToolkit\Toolkit\*" -Destination "$OutputPath\source" -Recurse
         New-Item -Path "$OutputPath\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        Copy-Item -Path "$Path\scripts\Deploy-Application.ps1" -Destination "$OutputPath\source\Deploy-Application.ps1"
+        Write-Msg -Msg "Copy Deploy-Application.ps1 to: $OutputPath\source\Deploy-Application.ps1."
+        Copy-Item -Path "Deploy-Application.ps1" -Destination "$OutputPath\source\Deploy-Application.ps1" -Force
 
         # Copy the configuration files and setup.exe to the package source
         Write-Msg -Msg "Copy configuration files and setup.exe to package source."
