@@ -223,8 +223,9 @@ Try {
             Write-Log "Find Install-Microsoft365Apps.xml in $dirFiles"
             $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
             Write-Log "Found: $($XmlFile.FullName)"
-            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
-            $Msg = "Installing: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
+            $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
+            $XmlDocument.Load($XmlFile.FullName)
+            $Msg = "Installing: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
         }
         catch {
             Write-Log "Error: $($_.Exception.Message)"
