@@ -220,11 +220,14 @@ Try {
         ## <Perform Installation tasks here>
         # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
         try {
+            Write-Log "Find Install-Microsoft365Apps.xml in $dirFiles"
             $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
+            Write-Log "Found: $($XmlFile.FullName)"
             $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
             $Msg = "Installing: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
         }
         catch {
+            Write-Log "Error: $($_.Exception.Message)"
             $Msg = "Installing the Microsoft 365 Apps"
         }
         Show-InstallationProgress $Msg
@@ -312,11 +315,14 @@ Try {
         }
         ## <Perform Repair tasks here>
         try {
+            Write-Log "Find Install-Microsoft365Apps.xml in $dirFiles"
             $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
+            Write-Log "Found: $($XmlFile.FullName)"
             $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
             $Msg = "Reinstalling: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
         }
         catch {
+            Write-Log "Error: $($_.Exception.Message)"
             $Msg = "Reinstalling the Microsoft 365 Apps"
         }
         Show-InstallationProgress $Msg
