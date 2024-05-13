@@ -243,7 +243,7 @@ Try {
 
         ## Display a message at the end of the install
         If (-not $useDefaultMsi) {
-            Show-InstallationPrompt -Message 'You can customize text to appear at the end of an install or remove it completely for unattended installations.' -ButtonRightText 'OK' -Icon Information -NoWait
+            Show-InstallationPrompt -Message 'Installation complete.' -ButtonRightText 'OK' -Icon Information -NoWait
         }
     }
     ElseIf ($deploymentType -ieq 'Uninstall') {
@@ -319,8 +319,9 @@ Try {
             Write-Log "Find Install-Microsoft365Apps.xml in $dirFiles"
             $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
             Write-Log "Found: $($XmlFile.FullName)"
-            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
-            $Msg = "Reinstalling: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
+            $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
+            $XmlDocument.Load($XmlFile.FullName)
+            $Msg = "Reinstalling: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
         }
         catch {
             Write-Log "Error: $($_.Exception.Message)"
