@@ -220,7 +220,7 @@ Try {
         ## <Perform Installation tasks here>
         # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
         try {
-            $XmlFile = Get-ChildItem -Recurse -Include "Install-Microsoft365Apps.xml"
+            $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
             $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
             $Msg = "Installing: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
         }
@@ -228,7 +228,7 @@ Try {
             $Msg = "Installing the Microsoft 365 Apps"
         }
         Show-InstallationProgress $Msg
-        Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
+        Execute-Process -Path "setup.exe" -Parameters "/configure $($XmlFile.FullName)"
 
         ##*===============================================
         ##* POST-INSTALLATION
@@ -271,7 +271,9 @@ Try {
         }
 
         ## <Perform Uninstallation tasks here>
-
+        $Msg = "Uninstalling the Microsoft 365 Apps"
+        Show-InstallationProgress $Msg
+        Execute-Process -Path "setup.exe" -Parameters "/configure Uninstall-Microsoft365Apps.xml"
 
         ##*===============================================
         ##* POST-UNINSTALLATION
@@ -309,6 +311,16 @@ Try {
             Execute-MSI @ExecuteDefaultMSISplat
         }
         ## <Perform Repair tasks here>
+        try {
+            $XmlFile = Get-ChildItem -Path $dirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
+            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
+            $Msg = "Reinstalling: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
+        }
+        catch {
+            $Msg = "Reinstalling the Microsoft 365 Apps"
+        }
+        Show-InstallationProgress $Msg
+        Execute-Process -Path "setup.exe" -Parameters "/configure $($XmlFile.FullName)"
 
         ##*===============================================
         ##* POST-REPAIR
