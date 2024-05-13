@@ -220,7 +220,8 @@ Try {
         ## <Perform Installation tasks here>
         # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
         try {
-            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path "Install-Microsoft365Apps.xml")
+            $XmlFile = Get-ChildItem -Recurse -Include "Install-Microsoft365Apps.xml"
+            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path $XmlFile.FullName -ErrorAction "SilentlyContinue")
             $Msg = "Installing: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
         }
         catch {
