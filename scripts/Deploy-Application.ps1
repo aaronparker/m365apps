@@ -99,7 +99,8 @@ Try {
     ## Set the script execution policy for this process
     Try {
         Set-ExecutionPolicy -ExecutionPolicy 'ByPass' -Scope 'Process' -Force -ErrorAction 'Stop'
-    } Catch {
+    }
+    Catch {
     }
 
     ##*===============================================
@@ -187,19 +188,19 @@ Try {
         Show-InstallationProgress
 
         ## <Perform Pre-Installation tasks here>
-		## Remove Office 2013  MSI installations
-		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
-			Show-InstallationProgress "Uninstalling Microsoft Office 2013"
-			Write-Log "Microsoft Office 2013 was detected. Uninstalling..."
-			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
-		}
+        ## Remove Office 2013  MSI installations
+        if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
+            Show-InstallationProgress "Uninstalling Microsoft Office 2013"
+            Write-Log "Microsoft Office 2013 was detected. Uninstalling..."
+            Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
+        }
 
-		## Remove Office 2016 MSI installations
-		if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
-			Show-InstallationProgress "Uninstalling Microsoft Office 2016"
-			Write-Log "Microsoft Office 2016 was detected. Uninstalling..."
-			Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
-		}
+        ## Remove Office 2016 MSI installations
+        if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
+            Show-InstallationProgress "Uninstalling Microsoft Office 2016"
+            Write-Log "Microsoft Office 2016 was detected. Uninstalling..."
+            Execute-Process -FilePath "CScript.exe" -Arguments "`"$dirSupportFiles\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes "1,2,3"
+        }
 
         ##*===============================================
         ##* INSTALLATION
@@ -217,8 +218,16 @@ Try {
         }
 
         ## <Perform Installation tasks here>
-		# Install Microsoft 365 Apps for Enterprise with content from the Office CDN
-		Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
+        # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
+        try {
+            $XmlConfig = [System.Xml.XmlDocument](Get-Content -Path "Install-Microsoft365Apps.xml")
+            $Msg = "Installing: $($XmlConfig.Configuration.Info.Description), Channel: $($XmlConfig.Configuration.Add.Channel)."
+        }
+        catch {
+            $Msg = "Installing the Microsoft 365 Apps"
+        }
+        Show-InstallationProgress $Msg
+        Execute-Process -Path "setup.exe" -Parameters "/configure Install-Microsoft365Apps.xml"
 
         ##*===============================================
         ##* POST-INSTALLATION
