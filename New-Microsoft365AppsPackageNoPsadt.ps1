@@ -171,7 +171,7 @@ process {
 
     #region Update the configuration.xml
     try {
-        $InstallXml = "$OutputPath\Install-Microsoft365Apps.xml"
+        $InstallXml = "$OutputPath\source\Install-Microsoft365Apps.xml"
         Write-Msg -Msg "Read configuration file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
 

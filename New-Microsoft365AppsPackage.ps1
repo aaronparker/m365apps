@@ -256,10 +256,10 @@ process {
         [System.String] $ProductID = ""
         switch ($Xml.Configuration.Add.Product.ID) {
             "O365ProPlusRetail" {
-                $ProductID += "Microsoft 365 apps for enterprise, "
+                $ProductID += "Microsoft 365 Apps for enterprise, "
             }
             "O365BusinessRetail" {
-                $ProductID += "Microsoft 365 apps for business, "
+                $ProductID += "Microsoft 365 Apps for business, "
             }
             "VisioProRetail" {
                 $ProductID += "Visio, "
