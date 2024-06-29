@@ -6,7 +6,7 @@ using namespace System.Management.Automation
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
 
     .DESCRIPTION
-        Uses a specified configuration.xml to create an intunewin package for the Microsoft 365 Apps with the PSAppDeployToolkit.
+        Uses a specified configuration.xml to create an intunewin package for the Microsoft 365 Apps (without the PSAppDeployToolkit).
 
     .PARAMETER Path
         Path to the top level directory of the m365apps repository on a local Windows machine.
@@ -138,24 +138,7 @@ begin {
         "$Path\m365\setup.exe",
         "$Path\icons\Microsoft365.png",
         "$Path\scripts\App.json",
-        "$Path\scripts\Create-Win32App.ps1",
-        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe",
-        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe.config",
-        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitBanner.png",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitConfig.xml",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitExtensions.ps1",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitHelp.ps1",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitLogo.ico",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitLogo.png",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitMain.cs",
-        "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitMain.ps1",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub03.vbs",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub07.vbs",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub10.vbs",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrubc2r.vbs",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub_O15msi.vbs",
-        "$Path\PSAppDeployToolkit\Toolkit\SupportFiles\OffScrub_O16msi.vbs"
+        "$Path\scripts\Create-Win32App.ps1"
     ) | ForEach-Object { if (-not (Test-Path -Path $_)) { throw [System.IO.FileNotFoundException]::New("File not found: $_") } }
 }
 
@@ -175,19 +158,11 @@ process {
         New-Item -Path "$OutputPath\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$OutputPath\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
-        # Copy the PSAppDeployToolkit files to the package source
-        # Copy the customised Deploy-Application.ps1 to the package source
-        Write-Msg -Msg "Copy PSAppDeployToolkit to: $OutputPath\source."
-        Copy-Item -Path "$Path\PSAppDeployToolkit\Toolkit\*" -Destination "$OutputPath\source" -Recurse
-        New-Item -Path "$OutputPath\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        Write-Msg -Msg "Copy Deploy-Application.ps1 to: $OutputPath\source\Deploy-Application.ps1."
-        Copy-Item -Path "$Path\scripts\Deploy-Application.ps1" -Destination "$OutputPath\source\Deploy-Application.ps1" -Force
-
         # Copy the configuration files and setup.exe to the package source
         Write-Msg -Msg "Copy configuration files and setup.exe to package source."
-        Copy-Item -Path $ConfigurationFile -Destination "$OutputPath\source\Files\Install-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$OutputPath\source\Files\Uninstall-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$OutputPath\source\Files\setup.exe"
+        Copy-Item -Path $ConfigurationFile -Destination "$OutputPath\source\Install-Microsoft365Apps.xml"
+        Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$OutputPath\source\Uninstall-Microsoft365Apps.xml"
+        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$OutputPath\source\setup.exe"
     }
     catch {
         throw $_
@@ -196,7 +171,7 @@ process {
 
     #region Update the configuration.xml
     try {
-        $InstallXml = "$OutputPath\source\Files\Install-Microsoft365Apps.xml"
+        $InstallXml = "$OutputPath\Install-Microsoft365Apps.xml"
         Write-Msg -Msg "Read configuration file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
 
@@ -222,7 +197,7 @@ process {
     Write-Msg -Msg "Create intunewin package in: $Path\output."
     $params = @{
         SourceFolder         = "$OutputPath\source"
-        SetupFile            = "Files\setup.exe"
+        SetupFile            = "setup.exe"
         OutputFolder         = "$OutputPath\output"
         Force                = $true
         IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
@@ -241,7 +216,7 @@ process {
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
 
         Write-Msg -Msg "Copy App.json to: $OutputPath\output\m365apps.json."
-        Copy-Item -Path "$Path\scripts\App.json" -Destination "$OutputPath\output\m365apps.json"
+        Copy-Item -Path "$Path\scripts\AppNoPsadt.json" -Destination "$OutputPath\output\m365apps.json"
 
         Write-Msg -Msg "Get content from: $OutputPath\output\m365apps.json."
         $Manifest = Get-Content -Path "$OutputPath\output\m365apps.json" | ConvertFrom-Json
@@ -256,10 +231,10 @@ process {
         [System.String] $ProductID = ""
         switch ($Xml.Configuration.Add.Product.ID) {
             "O365ProPlusRetail" {
-                $ProductID += "Microsoft 365 apps for enterprise, "
+                $ProductID += "Microsoft 365 Apps for enterprise, "
             }
             "O365BusinessRetail" {
-                $ProductID += "Microsoft 365 apps for business, "
+                $ProductID += "Microsoft 365 Apps for business, "
             }
             "VisioProRetail" {
                 $ProductID += "Visio, "
@@ -286,7 +261,7 @@ process {
         $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
 
         # Update package description
-        $Description = "$($xml.Configuration.Info.Description)`n`n**This package uses the PSAppDeployToolkit and will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+        $Description = "$($xml.Configuration.Info.Description)`n`nUses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
         Write-Msg -Msg "Package description: $Description."
         $Manifest.Information.Description = $Description
 
