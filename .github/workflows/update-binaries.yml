@@ -37,18 +37,18 @@ jobs:
         run: |
           New-Item -Path "${{ github.workspace }}\tmp" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
-      - name: Update PSAppDeployToolkit
-        shell: pwsh
-        run: |
-          New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-          $File = Get-EvergreenApp -Name "PSAppDeployToolkit" | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
-          Expand-Archive -LiteralPath $File.FullName -DestinationPath "${{ github.workspace }}\PSAppDeployToolkit" -Force
+      # - name: Update PSAppDeployToolkit
+      #   shell: pwsh
+      #   run: |
+      #     New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+      #     $File = Get-EvergreenApp -Name "PSAppDeployToolkit" | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
+      #     Expand-Archive -LiteralPath $File.FullName -DestinationPath "${{ github.workspace }}\PSAppDeployToolkit" -Force
 
-      - name: Restore PSAppDeployToolkit scripts
-        shell: pwsh
-        run: |
-          Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Deploy-Application.ps1" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1"
-          Copy-Item -Path "${{ github.workspace }}\scrub\*.vbs" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\SupportFiles"
+      # - name: Restore PSAppDeployToolkit scripts
+      #   shell: pwsh
+      #   run: |
+      #     Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Deploy-Application.ps1" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1"
+      #     Copy-Item -Path "${{ github.workspace }}\scrub\*.vbs" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\SupportFiles"
 
       - name: Update setup.exe
         shell: pwsh
