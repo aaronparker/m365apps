@@ -54,13 +54,13 @@ jobs:
             Path     = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
             PathType = "Leaf"
           }
-          if (-not (Test-Path @params)) { throw "Could not find configration file: ${{ github.event.inputs.configuration }}" }
+          if (-not (Test-Path @params)) { throw "Could not find configuration file: ${{ github.event.inputs.configuration }}" }
 
       - name: Install and cache PowerShell modules
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v6.2.1
         with:
-          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::"
+          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::, PSAppDeployToolkit:4.0.6"
           updatable: true
           shell: powershell
 

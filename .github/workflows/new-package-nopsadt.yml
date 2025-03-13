@@ -60,7 +60,7 @@ jobs:
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v6.2.1
         with:
-          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::"
+          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::, PSAppDeployToolkit:4.0.6"
           updatable: true
           shell: powershell
 
