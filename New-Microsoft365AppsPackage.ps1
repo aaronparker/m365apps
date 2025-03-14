@@ -1,5 +1,5 @@
 #Requires -PSEdition Desktop
-#Requires -Modules Evergreen, MSAL.PS, IntuneWin32App
+#Requires -Modules Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit
 using namespace System.Management.Automation
 <#
     .SYNOPSIS
@@ -141,7 +141,7 @@ begin {
         "$Path\scripts\Create-Win32App.ps1",
         "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe",
         "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.exe.config",
-        "$Path\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1",
+        "$Path\PSAppDeployToolkit\Toolkit\Invoke-AppDeployToolkit.ps1",
         "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitBanner.png",
         "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitConfig.xml",
         "$Path\PSAppDeployToolkit\Toolkit\AppDeployToolkit\AppDeployToolkitExtensions.ps1",
@@ -175,13 +175,19 @@ process {
         New-Item -Path "$OutputPath\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$OutputPath\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
+        # Create a PSADT template
+        Write-Host "Create PSADT template"
+        New-ADTTemplate -Destination "$Env:TEMP\psadt" -Force
+        $PsAdtSource = Get-ChildItem -Path "$Env:TEMP\psadt" -Directory -Filter "PSAppDeployToolkit*"
+        Copy-Item -Path "$PsAdtSource\*" -Destination "$OutputPath\source" -Recurse -Force
+
         # Copy the PSAppDeployToolkit files to the package source
-        # Copy the customised Deploy-Application.ps1 to the package source
+        # Copy the customised Invoke-AppDeployToolkit.ps1 to the package source
         Write-Msg -Msg "Copy PSAppDeployToolkit to: $OutputPath\source."
         Copy-Item -Path "$Path\PSAppDeployToolkit\Toolkit\*" -Destination "$OutputPath\source" -Recurse
         New-Item -Path "$OutputPath\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        Write-Msg -Msg "Copy Deploy-Application.ps1 to: $OutputPath\source\Deploy-Application.ps1."
-        Copy-Item -Path "$Path\scripts\Deploy-Application.ps1" -Destination "$OutputPath\source\Deploy-Application.ps1" -Force
+        Write-Msg -Msg "Copy Invoke-AppDeployToolkit.ps1 to: $OutputPath\source\Invoke-AppDeployToolkit.ps1."
+        Copy-Item -Path "$Path\scripts\Invoke-AppDeployToolkit.ps1" -Destination "$OutputPath\source\Invoke-AppDeployToolkit.ps1" -Force
 
         # Copy the configuration files and setup.exe to the package source
         Write-Msg -Msg "Copy configuration files and setup.exe to package source."

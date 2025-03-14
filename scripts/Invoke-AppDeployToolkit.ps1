@@ -64,8 +64,7 @@ https://psappdeploytoolkit.com
 #>
 
 [CmdletBinding()]
-param
-(
+param (
     [Parameter(Mandatory = $false)]
     [ValidateSet('Install', 'Uninstall', 'Repair')]
     [PSDefaultValue(Help = 'Install', Value = 'Install')]
@@ -93,197 +92,194 @@ param
 
 $adtSession = @{
     # App variables.
-    AppVendor = ''
-    AppName = ''
-    AppVersion = ''
-    AppArch = ''
-    AppLang = 'EN'
-    AppRevision = '01'
-    AppSuccessExitCodes = @(0)
-    AppRebootExitCodes = @(1641, 3010)
-    AppScriptVersion = '1.0.0'
-    AppScriptDate = '2025-03-13'
-    AppScriptAuthor = '<author name>'
+    AppVendor                   = 'Microsoft'
+    AppName                     = '365 Apps'
+    AppVersion                  = ''
+    AppArch                     = 'x64'
+    AppLang                     = 'EN'
+    AppRevision                 = '01'
+    AppSuccessExitCodes         = @(0)
+    AppRebootExitCodes          = @(1641, 3010)
+    AppScriptVersion            = '1.0.0'
+    AppScriptDate               = '2025-03-13'
+    AppScriptAuthor             = '<author name>'
 
     # Install Titles (Only set here to override defaults set by the toolkit).
-    InstallName = ''
-    InstallTitle = ''
+    InstallName                 = ''
+    InstallTitle                = ''
 
     # Script variables.
     DeployAppScriptFriendlyName = $MyInvocation.MyCommand.Name
-    DeployAppScriptVersion = '4.0.6'
-    DeployAppScriptParameters = $PSBoundParameters
+    DeployAppScriptVersion      = '4.0.6'
+    DeployAppScriptParameters   = $PSBoundParameters
 }
 
-function Install-ADTDeployment
-{
-        ##*===============================================
-        ##* PRE-INSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
+function Install-ADTDeployment {
+    ##*===============================================
+    ##* PRE-INSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
 
-        ## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
-        Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -AllowDefer  -DeferTimes 3 -CheckDiskSpace  -PersistPrompt 
+    ## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
+    Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -AllowDefer  -DeferTimes 3 -CheckDiskSpace  -PersistPrompt 
 
-        ## Show Progress Message (with the default message)
-        Show-ADTInstallationProgress 
+    ## Show Progress Message (with the default message)
+    Show-ADTInstallationProgress 
 
-        ## <Perform Pre-Installation tasks here>
-        ## Remove Office 2013  MSI installations
-        if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
-            Show-ADTInstallationProgress -StatusMessage "Uninstalling Microsoft Office 2013"
-            Write-ADTLogEntry -Message "Microsoft Office 2013 was detected. Uninstalling..."
-            Start-ADTProcess -FilePath "CScript.exe" -ArgumentList "`"$($adtSession.DirSupportFiles)\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes 1,2,3
+    ## <Perform Pre-Installation tasks here>
+    ## Remove Office 2013  MSI installations
+    if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office15", "$envProgramFiles\Microsoft Office\Office15") {
+        Show-ADTInstallationProgress -StatusMessage "Uninstalling Microsoft Office 2013"
+        Write-ADTLogEntry -Message "Microsoft Office 2013 was detected. Uninstalling..."
+        Start-ADTProcess -FilePath "CScript.exe" -ArgumentList "`"$($adtSession.DirSupportFiles)\OffScrub_O15msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes 1, 2, 3
+    }
+
+    ## Remove Office 2016 MSI installations
+    if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
+        Show-ADTInstallationProgress -StatusMessage "Uninstalling Microsoft Office 2016"
+        Write-ADTLogEntry -Message "Microsoft Office 2016 was detected. Uninstalling..."
+        Start-ADTProcess -FilePath "CScript.exe" -ArgumentList "`"$($adtSession.DirSupportFiles)\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes 1, 2, 3
+    }
+
+    ##*===============================================
+    ##* INSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = $adtSession.DeploymentType
+
+    ## Handle Zero-Config MSI Installations
+    if ($adtSession.UseDefaultMsi) {
+        [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $adtSession.DefaultMsiFile }; If ($defaultMstFile) {
+            $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
         }
-
-        ## Remove Office 2016 MSI installations
-        if (Test-Path -Path "$envProgramFilesX86\Microsoft Office\Office16", "$envProgramFiles\Microsoft Office\Office16") {
-            Show-ADTInstallationProgress -StatusMessage "Uninstalling Microsoft Office 2016"
-            Write-ADTLogEntry -Message "Microsoft Office 2016 was detected. Uninstalling..."
-            Start-ADTProcess -FilePath "CScript.exe" -ArgumentList "`"$($adtSession.DirSupportFiles)\OffScrub_O16msi.vbs`" CLIENTALL /S /Q /NoCancel" -WindowStyle Hidden -IgnoreExitCodes 1,2,3
-        }
-
-        ##*===============================================
-        ##* INSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = $adtSession.DeploymentType
-
-        ## Handle Zero-Config MSI Installations
-        If ($adtSession.UseDefaultMsi) {
-            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $adtSession.DefaultMsiFile }; If ($defaultMstFile) {
-                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
-            }
-            Start-ADTMsiProcess ; If ($defaultMspFiles) {
-                $defaultMspFiles | ForEach-Object { Start-ADTMsiProcess -Action 'Patch' -FilePath $_ }
-            }
-        }
-
-        ## <Perform Installation tasks here>
-        # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
-        try {
-            Write-ADTLogEntry -Message "Find Install-Microsoft365Apps.xml in $($adtSession.DirFiles)"
-            $XmlFile = Get-ChildItem -Path $adtSession.DirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
-            Write-ADTLogEntry -Message "Found: $($XmlFile.FullName)"
-            $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
-            $XmlDocument.Load($XmlFile.FullName)
-            $Msg = "Installing: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
-        }
-        catch {
-            Write-ADTLogEntry -Message "Error: $($_.Exception.Message)"
-            $Msg = "Installing the Microsoft 365 Apps"
-        }
-        Show-ADTInstallationProgress -StatusMessage $Msg
-        Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure $($XmlFile.FullName)"
-
-        ##*===============================================
-        ##* POST-INSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
-
-        ## <Perform Post-Installation tasks here>
-
-        ## Display a message at the end of the install
-        If (-not $adtSession.UseDefaultMsi) {
-            Show-ADTInstallationPrompt -Message 'Installation complete.' -ButtonRightText 'OK' -Icon Information -NoWait 
+        Start-ADTMsiProcess ; If ($defaultMspFiles) {
+            $defaultMspFiles | ForEach-Object { Start-ADTMsiProcess -Action 'Patch' -FilePath $_ }
         }
     }
 
-function Uninstall-ADTDeployment
-{
-        ##*===============================================
-        ##* PRE-UNINSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
+    ## <Perform Installation tasks here>
+    # Install Microsoft 365 Apps for Enterprise with content from the Office CDN
+    try {
+        Write-ADTLogEntry -Message "Find Install-Microsoft365Apps.xml in $($adtSession.DirFiles)"
+        $XmlFile = Get-ChildItem -Path $adtSession.DirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
+        Write-ADTLogEntry -Message "Found: $($XmlFile.FullName)"
+        $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
+        $XmlDocument.Load($XmlFile.FullName)
+        $Msg = "Installing: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
+    }
+    catch {
+        Write-ADTLogEntry -Message "Error: $($_.Exception.Message)"
+        $Msg = "Installing the Microsoft 365 Apps"
+    }
+    Show-ADTInstallationProgress -StatusMessage $Msg
+    Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure $($XmlFile.FullName)"
 
-        ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
-        Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -CloseProcessesCountdown 60
+    ##*===============================================
+    ##* POST-INSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
 
-        ## Show Progress Message (with the default message)
-        Show-ADTInstallationProgress 
+    ## <Perform Post-Installation tasks here>
 
-        ## <Perform Pre-Uninstallation tasks here>
+    ## Display a message at the end of the install
+    If (-not $adtSession.UseDefaultMsi) {
+        Show-ADTInstallationPrompt -Message 'Installation complete.' -ButtonRightText 'OK' -Icon Information -NoWait 
+    }
+}
+
+function Uninstall-ADTDeployment {
+    ##*===============================================
+    ##* PRE-UNINSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
+
+    ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
+    Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -CloseProcessesCountdown 60
+
+    ## Show Progress Message (with the default message)
+    Show-ADTInstallationProgress 
+
+    ## <Perform Pre-Uninstallation tasks here>
 
 
-        ##*===============================================
-        ##* UNINSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = $adtSession.DeploymentType
+    ##*===============================================
+    ##* UNINSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = $adtSession.DeploymentType
 
-        ## Handle Zero-Config MSI Uninstallations
-        If ($adtSession.UseDefaultMsi) {
-            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Uninstall'; Path = $adtSession.DefaultMsiFile }; If ($defaultMstFile) {
-                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
-            }
-            Start-ADTMsiProcess 
+    ## Handle Zero-Config MSI Uninstallations
+    If ($adtSession.UseDefaultMsi) {
+        [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Uninstall'; Path = $adtSession.DefaultMsiFile }; If ($defaultMstFile) {
+            $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
         }
-
-        ## <Perform Uninstallation tasks here>
-        $Msg = "Uninstalling the Microsoft 365 Apps"
-        Show-ADTInstallationProgress -StatusMessage $Msg
-        Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure Uninstall-Microsoft365Apps.xml"
-
-        ##*===============================================
-        ##* POST-UNINSTALLATION
-        ##*===============================================
-        $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
-
-        ## <Perform Post-Uninstallation tasks here>
-
-
+        Start-ADTMsiProcess 
     }
 
-function Repair-ADTDeployment
-{
-        ##*===============================================
-        ##* PRE-REPAIR
-        ##*===============================================
-        $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
+    ## <Perform Uninstallation tasks here>
+    $Msg = "Uninstalling the Microsoft 365 Apps"
+    Show-ADTInstallationProgress -StatusMessage $Msg
+    Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure Uninstall-Microsoft365Apps.xml"
 
-        ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
-        Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -CloseProcessesCountdown 60
+    ##*===============================================
+    ##* POST-UNINSTALLATION
+    ##*===============================================
+    $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
 
-        ## Show Progress Message (with the default message)
-        Show-ADTInstallationProgress 
+    ## <Perform Post-Uninstallation tasks here>
 
-        ## <Perform Pre-Repair tasks here>
 
-        ##*===============================================
-        ##* REPAIR
-        ##*===============================================
-        $adtSession.InstallPhase = $adtSession.DeploymentType
+}
 
-        ## Handle Zero-Config MSI Repairs
-        If ($adtSession.UseDefaultMsi) {
-            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Repair'; Path = $adtSession.DefaultMsiFile; }; If ($defaultMstFile) {
-                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
-            }
-            Start-ADTMsiProcess 
+function Repair-ADTDeployment {
+    ##*===============================================
+    ##* PRE-REPAIR
+    ##*===============================================
+    $adtSession.InstallPhase = "Pre-$($adtSession.DeploymentType)"
+
+    ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
+    Show-ADTInstallationWelcome -CloseProcesses 'iexplore' -CloseProcessesCountdown 60
+
+    ## Show Progress Message (with the default message)
+    Show-ADTInstallationProgress 
+
+    ## <Perform Pre-Repair tasks here>
+
+    ##*===============================================
+    ##* REPAIR
+    ##*===============================================
+    $adtSession.InstallPhase = $adtSession.DeploymentType
+
+    ## Handle Zero-Config MSI Repairs
+    if ($adtSession.UseDefaultMsi) {
+        [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Repair'; Path = $adtSession.DefaultMsiFile; }; If ($defaultMstFile) {
+            $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
         }
-        ## <Perform Repair tasks here>
-        try {
-            Write-ADTLogEntry -Message "Find Install-Microsoft365Apps.xml in $($adtSession.DirFiles)"
-            $XmlFile = Get-ChildItem -Path $adtSession.DirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
-            Write-ADTLogEntry -Message "Found: $($XmlFile.FullName)"
-            $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
-            $XmlDocument.Load($XmlFile.FullName)
-            $Msg = "Reinstalling: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
-        }
-        catch {
-            Write-ADTLogEntry -Message "Error: $($_.Exception.Message)"
-            $Msg = "Reinstalling the Microsoft 365 Apps"
-        }
-        Show-ADTInstallationProgress -StatusMessage $Msg
-        Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure $($XmlFile.FullName)"
-
-        ##*===============================================
-        ##* POST-REPAIR
-        ##*===============================================
-        $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
-
-        ## <Perform Post-Repair tasks here>
-
-
+        Start-ADTMsiProcess 
     }
+    ## <Perform Repair tasks here>
+    try {
+        Write-ADTLogEntry -Message "Find Install-Microsoft365Apps.xml in $($adtSession.DirFiles)"
+        $XmlFile = Get-ChildItem -Path $adtSession.DirFiles -Recurse -Include "Install-Microsoft365Apps.xml"
+        Write-ADTLogEntry -Message "Found: $($XmlFile.FullName)"
+        $XmlDocument = New-Object -TypeName "System.Xml.XmlDocument"
+        $XmlDocument.Load($XmlFile.FullName)
+        $Msg = "Reinstalling: $($XmlDocument.Configuration.Info.Description) Channel: $($XmlDocument.Configuration.Add.Channel)."
+    }
+    catch {
+        Write-ADTLogEntry -Message "Error: $($_.Exception.Message)"
+        $Msg = "Reinstalling the Microsoft 365 Apps"
+    }
+    Show-ADTInstallationProgress -StatusMessage $Msg
+    Start-ADTProcess -FilePath "setup.exe" -ArgumentList "/configure $($XmlFile.FullName)"
+
+    ##*===============================================
+    ##* POST-REPAIR
+    ##*===============================================
+    $adtSession.InstallPhase = "Post-$($adtSession.DeploymentType)"
+
+    ## <Perform Post-Repair tasks here>
+
+
+}
 
 
 ##================================================
@@ -296,31 +292,25 @@ $ProgressPreference = [System.Management.Automation.ActionPreference]::SilentlyC
 Set-StrictMode -Version 1
 
 # Import the module and instantiate a new session.
-try
-{
-    $moduleName = if ([System.IO.File]::Exists("$PSScriptRoot\PSAppDeployToolkit\PSAppDeployToolkit.psd1"))
-    {
+try {
+    $moduleName = if ([System.IO.File]::Exists("$PSScriptRoot\PSAppDeployToolkit\PSAppDeployToolkit.psd1")) {
         Get-ChildItem -LiteralPath $PSScriptRoot\PSAppDeployToolkit -Recurse -File | Unblock-File -ErrorAction Ignore
         "$PSScriptRoot\PSAppDeployToolkit\PSAppDeployToolkit.psd1"
     }
-    else
-    {
+    else {
         'PSAppDeployToolkit'
     }
     Import-Module -FullyQualifiedName @{ ModuleName = $moduleName; Guid = '8c3c366b-8606-4576-9f2d-4051144f7ca2'; ModuleVersion = '4.0.6' } -Force
-    try
-    {
+    try {
         $iadtParams = Get-ADTBoundParametersAndDefaultValues -Invocation $MyInvocation
         $adtSession = Open-ADTSession -SessionState $ExecutionContext.SessionState @adtSession @iadtParams -PassThru
     }
-    catch
-    {
+    catch {
         Remove-Module -Name PSAppDeployToolkit* -Force
         throw
     }
 }
-catch
-{
+catch {
     $Host.UI.WriteErrorLine((Out-String -InputObject $_ -Width ([System.Int32]::MaxValue)))
     exit 60008
 }
@@ -330,11 +320,9 @@ catch
 ## MARK: Invocation
 ##================================================
 
-try
-{
+try {
     Get-Item -Path $PSScriptRoot\PSAppDeployToolkit.* | & {
-        process
-        {
+        process {
             Get-ChildItem -LiteralPath $_.FullName -Recurse -File | Unblock-File -ErrorAction Ignore
             Import-Module -Name $_.FullName -Force
         }
@@ -342,13 +330,11 @@ try
     & "$($adtSession.DeploymentType)-ADTDeployment"
     Close-ADTSession
 }
-catch
-{
+catch {
     Write-ADTLogEntry -Message ($mainErrorMessage = Resolve-ADTErrorRecord -ErrorRecord $_) -Severity 3
     Show-ADTDialogBox -Text $mainErrorMessage -Icon Stop | Out-Null
     Close-ADTSession -ExitCode 60001
 }
-finally
-{
+finally {
     Remove-Module -Name PSAppDeployToolkit* -Force
 }
