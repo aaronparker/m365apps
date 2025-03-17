@@ -11,6 +11,9 @@ using namespace System.Management.Automation
     .PARAMETER Path
         Path to the top level directory of the m365apps repository on a local Windows machine.
 
+    .PARAMETER Destination
+        Path where the package will be created. Defaults to a 'package' directory under $Path.
+
     .PARAMETER ConfigurationFile
         Full path to the Microsoft 365 Apps package configuration file.
 
@@ -19,6 +22,9 @@ using namespace System.Management.Automation
 
     .PARAMETER CompanyName
         Company name to include in the configuration.xml.
+
+    .PARAMETER UsePsadt
+        Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.
 
     .PARAMETER TenantId
         The tenant id (GUID) of the target Entra ID tenant.
@@ -39,6 +45,7 @@ using namespace System.Management.Automation
             ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
             Channel           = Current
             CompanyName       = stealthpuppy
+            UsePsadt          = $true
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
             Import            = $true
         }
@@ -47,7 +54,7 @@ using namespace System.Management.Automation
     .EXAMPLE
         $params = @{
             Path              = E:\project\m365Apps
-            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
+            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlusVisioProRetailProjectProRetail.xml
             Channel           = Current
             CompanyName       = stealthpuppy
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
@@ -87,6 +94,9 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
+    [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
+    [System.Management.Automation.SwitchParameter] $UsePsadt,
+
     [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Entra ID tenant.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
@@ -100,9 +110,6 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Client secret used to authenticate against the app registration.")]
     [ValidateNotNullOrEmpty()]
     [System.String] $ClientSecret,
-
-    [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
-    [System.Management.Automation.SwitchParameter] $UsePsadt,
 
     [Parameter(Mandatory = $false, HelpMessage = "Import the package into Microsoft Intune.")]
     [System.Management.Automation.SwitchParameter] $Import

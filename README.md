@@ -37,9 +37,11 @@ When the package is generated, the following properties will be updated:
 | Parameter | Description | Required |
 |:--|:--|:--|
 | Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
+| Destination | Path where the package will be created. Defaults to a 'package' directory under $Path. | No |
 | ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
 | Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
 | CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
+| UsePsadt | Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit. When used this will include the PSADT in the package which will include scripts to uninstall earlier versions of Microsoft Office before installing the Microsoft 365 Apps | No. |
 | TenantId | The tenant id (GUID) of the target Entra ID tenant. | Yes |
 | ClientId | The client id (GUID) of the target Entra ID app registration. | No |
 | ClientSecret | Client secret used to authenticate against the app registration. | No |
@@ -52,12 +54,13 @@ Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administr
 ```powershell
 Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
 $params = @{
-    Path             = "E:\projects\m365Apps"
-    ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
-    Channel          = "Current"
-    CompanyName      = "stealthpuppy"
-    TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
-    Import           = $true 
+    Path              = E:\project\m365Apps
+    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
+    Channel           = Current
+    CompanyName       = stealthpuppy
+    UsePsadt          = $true
+    TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
+    Import            = $true
 }
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
@@ -68,14 +71,14 @@ Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credent
 
 ```powershell
 $params = @{
-    Path             = "E:\projects\m365Apps"
-    ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
-    Channel          = "MonthlyEnterprise"
-    CompanyName      = "stealthpuppy"
-    TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
-    ClientId         = "60912c81-37e8-4c94-8cd6-b8b90a475c0e"
-    ClientSecret     = "<secret>"
-    Import           = $true 
+    Path              = E:\project\m365Apps
+    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlusVisioProRetailProjectProRetail.xml
+    Channel           = Current
+    CompanyName       = stealthpuppy
+    TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
+    ClientId          = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
+    ClientSecret      = <secret>
+    Import            = $true
 }
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
