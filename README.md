@@ -40,8 +40,8 @@ When the package is generated, the following properties will be updated:
 | ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
 | Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
 | CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
-| TenantId | The tenant id (GUID) of the target Azure AD tenant. | Yes |
-| ClientId | The client id (GUID) of the target Azure AD app registration. | No |
+| TenantId | The tenant id (GUID) of the target Entra ID tenant. | Yes |
+| ClientId | The client id (GUID) of the target Entra ID app registration. | No |
 | ClientSecret | Client secret used to authenticate against the app registration. | No |
 | Import | Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant. | No |
 
@@ -64,7 +64,7 @@ $params = @{
 
 ### Usage via App Registration
 
-Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Azure AD app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
+Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Entra ID app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
 
 ```powershell
 $params = @{

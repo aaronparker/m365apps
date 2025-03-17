@@ -21,10 +21,10 @@ using namespace System.Management.Automation
         Company name to include in the configuration.xml.
 
     .PARAMETER TenantId
-        The tenant id (GUID) of the target Azure AD tenant.
+        The tenant id (GUID) of the target Entra ID tenant.
 
     .PARAMETER ClientId
-        The client id (GUID) of the target Azure AD app registration.
+        The client id (GUID) of the target Entra ID app registration.
 
     .PARAMETER ClientSecret
         Client secret used to authenticate against the app registration.
@@ -59,7 +59,7 @@ using namespace System.Management.Automation
 
     .NOTES
         Author: Aaron Parker
-        Twitter: @stealthpuppy
+        Bluesky: @stealthpuppy.com
 #>
 [CmdletBinding(SupportsShouldProcess = $false)]
 param(
@@ -67,6 +67,10 @@ param(
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ if (Test-Path -Path $_ -PathType "Container") { $true } else { throw "Path not found: '$_'" } })]
     [System.String] $Path = $PSScriptRoot,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Path where the package will be created.")]
+    [ValidateNotNullOrEmpty()]
+    [System.String] $Destination = "$Path\package",
 
     [Parameter(Mandatory = $true, HelpMessage = "Path to the Microsoft 365 Apps package configuration file.")]
     [ValidateNotNullOrEmpty()]
@@ -83,12 +87,12 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
-    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
+    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Entra ID tenant.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $TenantId,
 
-    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Azure AD app registration.")]
+    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Entra ID app registration.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $ClientId,
@@ -97,9 +101,8 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $ClientSecret,
 
-    [Parameter(Mandatory = $false, HelpMessage = "Path where the package will be created.")]
-    [ValidateNotNullOrEmpty()]
-    [System.String] $Destination = "$Path\package",
+    [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
+    [System.Management.Automation.SwitchParameter] $UsePsadt,
 
     [Parameter(Mandatory = $false, HelpMessage = "Import the package into Microsoft Intune.")]
     [System.Management.Automation.SwitchParameter] $Import
@@ -167,25 +170,34 @@ process {
         New-Item -Path "$Destination\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
         New-Item -Path "$Destination\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
 
-        # Create a PSADT template
-        Write-Host "Create PSADT template"
-        New-ADTTemplate -Destination "$Env:TEMP\psadt" -Force
-        $PsAdtSource = Get-ChildItem -Path "$Env:TEMP\psadt" -Directory -Filter "PSAppDeployToolkit*"
-        Copy-Item -Path "$($PsAdtSource.FullName)\*" -Destination "$Destination\source" -Recurse -Force
+        if ($UsePsadt -eq $true) {
+            # Create a PSADT template
+            Write-Host "Create PSADT template"
+            New-ADTTemplate -Destination "$Env:TEMP\psadt" -Force
+            $PsAdtSource = Get-ChildItem -Path "$Env:TEMP\psadt" -Directory -Filter "PSAppDeployToolkit*"
+            Copy-Item -Path "$($PsAdtSource.FullName)\*" -Destination "$Destination\source" -Recurse -Force
 
-        # Copy the PSAppDeployToolkit files to the package source
-        # Copy the customised Invoke-AppDeployToolkit.ps1 to the package source
-        Write-Msg -Msg "Copy Office scrub scripts to: $Destination\source\SupportFiles."
-        Copy-Item -Path "$Path\scrub\*" -Destination "$Destination\source\SupportFiles" -Recurse
-        New-Item -Path "$Destination\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        Write-Msg -Msg "Copy Invoke-AppDeployToolkit.ps1 to: $Destination\source\Invoke-AppDeployToolkit.ps1."
-        Copy-Item -Path "$Path\scripts\Invoke-AppDeployToolkit.ps1" -Destination "$Destination\source\Invoke-AppDeployToolkit.ps1" -Force
+            # Copy the PSAppDeployToolkit files to the package source
+            # Copy the customised Invoke-AppDeployToolkit.ps1 to the package source
+            Write-Msg -Msg "Copy Office scrub scripts to: $Destination\source\SupportFiles."
+            Copy-Item -Path "$Path\scrub\*" -Destination "$Destination\source\SupportFiles" -Recurse
+            New-Item -Path "$Destination\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
+            Write-Msg -Msg "Copy Invoke-AppDeployToolkit.ps1 to: $Destination\source\Invoke-AppDeployToolkit.ps1."
+            Copy-Item -Path "$Path\scripts\Invoke-AppDeployToolkit.ps1" -Destination "$Destination\source\Invoke-AppDeployToolkit.ps1" -Force
 
-        # Copy the configuration files and setup.exe to the package source
-        Write-Msg -Msg "Copy configuration files and setup.exe to package source."
-        Copy-Item -Path $ConfigurationFile -Destination "$Destination\source\Files\Install-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Destination\source\Files\Uninstall-Microsoft365Apps.xml"
-        Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Destination\source\Files\setup.exe"
+            # Copy the configuration files and setup.exe to the package source
+            Write-Msg -Msg "Copy configuration files and setup.exe to package source."
+            Copy-Item -Path $ConfigurationFile -Destination "$Destination\source\Files\Install-Microsoft365Apps.xml"
+            Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Destination\source\Files\Uninstall-Microsoft365Apps.xml"
+            Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Destination\source\Files\setup.exe"
+        }
+        else {
+            # Copy the configuration files and setup.exe to the package source
+            Write-Msg -Msg "Copy configuration files and setup.exe to package source."
+            Copy-Item -Path $ConfigurationFile -Destination "$Destination\source\Install-Microsoft365Apps.xml"
+            Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Destination\source\Uninstall-Microsoft365Apps.xml"
+            Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Destination\source\setup.exe"
+        }
     }
     catch {
         throw $_
@@ -194,7 +206,14 @@ process {
 
     #region Update the configuration.xml
     try {
-        $InstallXml = "$Destination\source\Files\Install-Microsoft365Apps.xml"
+        # Set the path to the configuration file
+        if ($UsePsadt -eq $true) {
+            $InstallXml = "$Destination\source\Files\Install-Microsoft365Apps.xml"
+        }
+        else {
+            $InstallXml = "$Destination\source\Install-Microsoft365Apps.xml"
+        }
+
         Write-Msg -Msg "Read configuration file: $InstallXml."
         [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
 
@@ -220,7 +239,7 @@ process {
     Write-Msg -Msg "Create intunewin package in: $Path\output."
     $params = @{
         SourceFolder         = "$Destination\source"
-        SetupFile            = "Files\setup.exe"
+        SetupFile            = if ($UsePsadt -eq $true) { "Files\setup.exe" } else { "setup.exe" }
         OutputFolder         = "$Destination\output"
         Force                = $true
         IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
@@ -239,7 +258,12 @@ process {
         Write-Msg -Msg "Using setup.exe version: $SetupVersion."
 
         Write-Msg -Msg "Copy App.json to: $Destination\output\m365apps.json."
-        Copy-Item -Path "$Path\scripts\App.json" -Destination "$Destination\output\m365apps.json"
+        if ($UsePsadt -eq $true) {
+            Copy-Item -Path "$Path\scripts\App.json" -Destination "$Destination\output\m365apps.json"
+        }
+        else {
+            Copy-Item -Path "$Path\scripts\AppNoPsadt.json" -Destination "$Destination\output\m365apps.json"
+        }
 
         Write-Msg -Msg "Get content from: $Destination\output\m365apps.json."
         $Manifest = Get-Content -Path "$Destination\output\m365apps.json" | ConvertFrom-Json
@@ -330,7 +354,7 @@ process {
     #endregion
 
     #region Lets see if this application is already in Intune and needs to be updated
-    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps packages from Intune"
     Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
     $ExistingApp = Get-IntuneWin32App | `
         Select-Object -Property * -ExcludeProperty "largeIcon" | `
@@ -378,7 +402,7 @@ process {
             #endregion
 
             #region Add supersedence for existing packages
-            Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+            Write-Msg -Msg "Retrieve Microsoft 365 Apps packages from Intune"
             $Supersedence = Get-IntuneWin32App | `
                 Where-Object { $_.id -ne $ImportedApp.id } | `
                 Where-Object { $_.notes -match "PSPackageFactory" } | `

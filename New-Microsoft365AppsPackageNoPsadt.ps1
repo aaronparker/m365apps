@@ -21,10 +21,10 @@ using namespace System.Management.Automation
         Company name to include in the configuration.xml.
 
     .PARAMETER TenantId
-        The tenant id (GUID) of the target Azure AD tenant.
+        The tenant id (GUID) of the target Entra ID tenant.
 
     .PARAMETER ClientId
-        The client id (GUID) of the target Azure AD app registration.
+        The client id (GUID) of the target Entra ID app registration.
 
     .PARAMETER ClientSecret
         Client secret used to authenticate against the app registration.
@@ -59,7 +59,7 @@ using namespace System.Management.Automation
 
     .NOTES
         Author: Aaron Parker
-        Twitter: @stealthpuppy
+        Bluesky: @stealthpuppy.com
 #>
 [CmdletBinding(SupportsShouldProcess = $false)]
 param(
@@ -83,12 +83,12 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
-    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Azure AD tenant.")]
+    [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Entra ID tenant.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $TenantId,
 
-    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Azure AD app registration.")]
+    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Entra ID app registration.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $ClientId,
@@ -310,7 +310,7 @@ process {
     #endregion
 
     #region Lets see if this application is already in Intune and needs to be updated
-    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps packages from Intune"
     Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
     $ExistingApp = Get-IntuneWin32App | `
         Select-Object -Property * -ExcludeProperty "largeIcon" | `
@@ -358,7 +358,7 @@ process {
             #endregion
 
             #region Add supersedence for existing packages
-            Write-Msg -Msg "Retrieve existing Microsoft 365 Apps in Intune"
+            Write-Msg -Msg "Retrieve Microsoft 365 Apps packages from Intune"
             $Supersedence = Get-IntuneWin32App | `
                 Where-Object { $_.id -ne $ImportedApp.id } | `
                 Where-Object { $_.notes -match "PSPackageFactory" } | `
