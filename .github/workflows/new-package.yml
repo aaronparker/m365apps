@@ -72,9 +72,10 @@ jobs:
         run: |
           $params = @{
               Path              = "${{ github.workspace }}"
-              ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+              ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel           = "${{ github.event.inputs.channel }}"
               CompanyName       = "${{ github.event.inputs.companyname }}"
+              UsePsadt          = $true
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
@@ -91,9 +92,10 @@ jobs:
         run: |
           $params = @{
               Path              = "${{ github.workspace }}"
-              ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+              ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel           = "${{ github.event.inputs.channel }}"
               CompanyName       = "${{ github.event.inputs.companyname }}"
+              UsePsadt          = $true
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
