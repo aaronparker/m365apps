@@ -112,8 +112,8 @@ To use the package workflow, [clone this repository](https://docs.github.com/en/
 
 This repository includes copies of the following binaries and support files that are automatically kept updated with the latest versions:
 
-* [Microsoft 365 Apps / Office Deployment Tool](https://www.microsoft.com/en-us/download/details.aspx?id=49117) (`setup.exe`) - the key installer required to install, configure and uninstall the Microsoft 365 Apps
+* [Microsoft 365 Apps / Office Deployment Tool](https://www.microsoft.com/en-us/download/details.aspx?id=49117) (`setup.exe`) - the key installer required to install, configure and uninstall the Microsoft 365 Apps. Microsoft updates this tool roughly every quarter
 * [Microsoft Win32 Content Prep Tool](https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool) (`IntuneWinAppUtil.exe`) - the tool that converts Win32 applications into the intunewin package format
-* [PSAppDeployToolkit](https://psappdeploytoolkit.com/) - the install is managed with the PowerShell App Deployment Toolkit
+* ~~[PSAppDeployToolkit](https://psappdeploytoolkit.com/) - the install is managed with the PowerShell App Deployment Toolkit~~. The PowerShell App Deployment Toolkit 4.x is now used, and is downloaded during package creation
 
 If you have cloned this repository, ensure that you synchronise changes to update binaries to the latest version releases.
