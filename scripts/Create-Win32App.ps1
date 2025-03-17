@@ -47,7 +47,7 @@ process {
     $AppData = Get-Content -Path $Json | ConvertFrom-Json
 
     # Required packaging variables
-    $ScriptsFolder = [System.IO.Path]::Combine($PSScriptRoot, "Scripts")
+    $ScriptsFolder = $PSScriptRoot
 
     # Icon file - download the file, if the property is a URL
     if ($AppData.PackageInformation.IconFile -match "^http") {
@@ -206,7 +206,7 @@ process {
                             # Create a custom script based requirement rule
                             $RequirementRuleArgs = @{
                                 "IntegerOutputDataType"     = $true
-                                "ScriptFile"                = $RequirementRuleItem.ScriptFile
+                                "ScriptFile"                = (Join-Path -Path $ScriptsFolder -ChildPath $RequirementRuleItem.ScriptFile)
                                 "ScriptContext"             = $RequirementRuleItem.ScriptContext
                                 "IntegerComparisonOperator" = $RequirementRuleItem.Operator
                                 "IntegerValue"              = $RequirementRuleItem.Value
@@ -218,7 +218,7 @@ process {
                             # Create a custom script based requirement rule
                             $RequirementRuleArgs = @{
                                 "BooleanOutputDataType"     = $true
-                                "ScriptFile"                = $RequirementRuleItem.ScriptFile
+                                "ScriptFile"                = (Join-Path -Path $ScriptsFolder -ChildPath $RequirementRuleItem.ScriptFile)
                                 "ScriptContext"             = $RequirementRuleItem.ScriptContext
                                 "BooleanComparisonOperator" = $RequirementRuleItem.Operator
                                 "BooleanValue"              = $RequirementRuleItem.Value
@@ -230,7 +230,7 @@ process {
                             # Create a custom script based requirement rule
                             $RequirementRuleArgs = @{
                                 "DateTimeOutputDataType"     = $true
-                                "ScriptFile"                 = $RequirementRuleItem.ScriptFile
+                                "ScriptFile"                 = (Join-Path -Path $ScriptsFolder -ChildPath $RequirementRuleItem.ScriptFile)
                                 "ScriptContext"              = $RequirementRuleItem.ScriptContext
                                 "DateTimeComparisonOperator" = $RequirementRuleItem.Operator
                                 "DateTimeValue"              = $RequirementRuleItem.Value
@@ -242,7 +242,7 @@ process {
                             # Create a custom script based requirement rule
                             $RequirementRuleArgs = @{
                                 "FloatOutputDataType"     = $true
-                                "ScriptFile"              = $RequirementRuleItem.ScriptFile
+                                "ScriptFile"              = (Join-Path -Path $ScriptsFolder -ChildPath $RequirementRuleItem.ScriptFile)
                                 "ScriptContext"           = $RequirementRuleItem.ScriptContext
                                 "FloatComparisonOperator" = $RequirementRuleItem.Operator
                                 "FloatValue"              = $RequirementRuleItem.Value
@@ -254,7 +254,7 @@ process {
                             # Create a custom script based requirement rule
                             $RequirementRuleArgs = @{
                                 "VersionOutputDataType"     = $true
-                                "ScriptFile"                = $RequirementRuleItem.ScriptFile
+                                "ScriptFile"                = (Join-Path -Path $ScriptsFolder -ChildPath $RequirementRuleItem.ScriptFile)
                                 "ScriptContext"             = $RequirementRuleItem.ScriptContext
                                 "VersionComparisonOperator" = $RequirementRuleItem.Operator
                                 "VersionValue"              = $RequirementRuleItem.Value
