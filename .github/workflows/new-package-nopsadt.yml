@@ -72,16 +72,17 @@ jobs:
         run: |
           $params = @{
               Path              = "${{ github.workspace }}"
-              ConfigurationFile  = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
+              ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel           = "${{ github.event.inputs.channel }}"
               CompanyName       = "${{ github.event.inputs.companyname }}"
+              UsePsadt          = $false
               TenantId          = "${{ secrets.TENANT_ID }}"
               ClientId          = "${{ secrets.CLIENT_ID }}"
               ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
               Import            = $true
               Verbose           = $true
           }
-          & "${{ github.workspace }}\New-Microsoft365AppsPackageNoPsadt.ps1" @params
+          & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
       - name: Create package artifact only
         id: create-artifact
