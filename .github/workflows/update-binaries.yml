@@ -2,7 +2,7 @@
 # setup.exe from the Office Deployment Tool
 # PSAppDeployToolkit to manage the install
 # Microsoft Win32 Content Prep Tool (IntuneWinAppUtil.exe) to package into intunewin format
-name: Update binaries
+name: 'Update binaries'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,19 +36,6 @@ jobs:
         shell: pwsh
         run: |
           New-Item -Path "${{ github.workspace }}\tmp" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-
-      # - name: Update PSAppDeployToolkit
-      #   shell: pwsh
-      #   run: |
-      #     New-Item -Path "${{ github.workspace }}\PSAppDeployToolkit" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-      #     $File = Get-EvergreenApp -Name "PSAppDeployToolkit" | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
-      #     Expand-Archive -LiteralPath $File.FullName -DestinationPath "${{ github.workspace }}\PSAppDeployToolkit" -Force
-
-      # - name: Restore PSAppDeployToolkit scripts
-      #   shell: pwsh
-      #   run: |
-      #     Copy-Item -Path "${{ github.workspace }}\PSAppDeployToolkit\Deploy-Application.ps1" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\Deploy-Application.ps1"
-      #     Copy-Item -Path "${{ github.workspace }}\scrub\*.vbs" -Destination "${{ github.workspace }}\PSAppDeployToolkit\Toolkit\SupportFiles"
 
       - name: Update setup.exe
         shell: pwsh

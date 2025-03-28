@@ -1,4 +1,4 @@
-name: Validate XML
+name: 'Validate XML'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
