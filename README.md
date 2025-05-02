@@ -10,13 +10,20 @@ For full details on how to use this solution see: [An Intune Package Factory for
 
 Microsoft 365 Apps configuration files are included in this repository - these files can be used to create packages for any target tenant as some key options will be updated dynamically by this solution. 
 
-* `O365BusinessRetail.xml` - Configuration file for Microsoft 365 Apps for business
-* `O365BusinessRetail-VDI.xml` - Configuration file for Microsoft 365 Apps for business with shared licensing enabled, and OneDrive and Teams excluded
+* `O365Business.xml` - Configuration file for Microsoft 365 Apps for business
+* `O365Business-VDI.xml` - Configuration file for Microsoft 365 Apps for business with shared licensing enabled, and OneDrive and Teams excluded
 * `O365ProPlus.xml` - Configuration file for Microsoft 365 Apps for enterprise
 * `O365ProPlus-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise with shared licensing enabled, and OneDrive and Teams excluded
-* `O365ProPlusVisioProRetailProjectProRetail.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project
-* `O365ProPlusVisioProRetailProjectProRetail-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project with shared licensing enabled, and OneDrive and Teams excluded
+* `O365ProPlusVisioProProjectPro.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project
+* `O365ProPlusVisioProProjectPro-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project with shared licensing enabled, and OneDrive and Teams excluded
+* `O365ProPlusOutlookVisioProProjectPro.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project. Excludes the classic Outlook application and installs the new Outlook app
+* `O365ProPlusOutlookVisioProProjectPro-VDI.xml` - Configuration file for Microsoft 365 Apps for enterprise, Visio, and Project with shared licensing enabled, and OneDrive and Teams excluded. Excludes the classic Outlook application and installs the new Outlook app
 * `Uninstall-Microsoft365Apps.xml` - A configuration that will uninstall all Microsoft 365 Apps
+
+**Note** - these configurations make a couple of assumptions:
+
+* The new Outlook is currently excluded for install with these configurations. Remove the exclusion - `<ExcludeApp ID="OutlookForWindows" />` - if you want to install the new Outlook. You can modify the configuration to exclude the classic Outlook client by updating this value to `<ExcludeApp ID="Outlook" />`
+* The VDI specific configurations assume that you will install or update OneDrive and Teams separately to the Microsoft 365 Apps install
 
 When the package is generated, the following properties will be updated:
 
@@ -72,7 +79,7 @@ Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credent
 ```powershell
 $params = @{
     Path              = E:\project\m365Apps
-    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlusVisioProRetailProjectProRetail.xml
+    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlusVisioProProjectPro.xml
     Channel           = Current
     CompanyName       = stealthpuppy
     TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
