@@ -13,12 +13,18 @@ on:
         description: Configuration file
         type: choice
         options:
-          - O365ProPlusVisioProRetailProjectProRetail.xml
+          - O365ProPlusVisioProProjectPro.xml
+          - O365ProPlusOutlookVisioProProjectPro.xml
           - O365ProPlus.xml
-          - O365BusinessRetail.xml
-          - O365ProPlusVisioProRetailProjectProRetail-VDI.xml          
+          - O365ProPlusOutlook.xml
+          - O365Business.xml
+          - O365BusinessOutlook.xml
+          - O365ProPlusVisioProProjectPro-VDI.xml
           - O365ProPlus-VDI.xml
-          - O365BusinessRetail-VDI.xml
+          - O365Business-VDI.xml
+          - O365ProPlusOutlookVisioProProjectPro-VDI.xml
+          - O365ProPlusOutlook-VDI.xml
+          - O365BusinessOutlook-VDI.xml
       channel:
         description: Update channel
         type: choice
