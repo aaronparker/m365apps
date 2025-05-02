@@ -6,6 +6,7 @@
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
+      <ExcludeApp ID="OutlookForWindows" />
       <ExcludeApp ID="Publisher" />
       <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Bing" />
