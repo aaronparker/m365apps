@@ -116,60 +116,27 @@ param(
 )
 
 begin {
-    function Write-Msg ($Msg) {
-        $Message = [HostInformationMessage]@{
-            Message         = "[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')]"
-            ForegroundColor = "Black"
-            BackgroundColor = "DarkCyan"
-            NoNewline       = $true
-        }
-        $params = @{
-            MessageData       = $Message
-            InformationAction = "Continue"
-            Tags              = "Microsoft365"
-        }
-        Write-Information @params
-        $params = @{
-            MessageData       = " $Msg"
-            InformationAction = "Continue"
-            Tags              = "Microsoft365"
-        }
-        Write-Information @params
-    }
+    # Import modules
+    Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force -ErrorAction "Stop"
+
+    # Validate required files exist
+    Write-Msg -Msg "Validate required files exist."
+    Test-RequiredFiles -Path $Path
 
     # Validate that the input file is XML
-    [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationFile -ErrorAction "Stop"
+    Write-Msg -Msg "Read configuration file: $ConfigurationFile."
+    $Xml = Import-XmlFile -FilePath $ConfigurationFile
 
     # Unblock all files in the repo
     Write-Msg -Msg "Unblock exe files in $Path."
     Get-ChildItem -Path $Path -Recurse -Include "*.exe" | Unblock-File
-
-    # Validate required files exist
-    Write-Msg -Msg "Validate required files exist."
-    @(
-        "$Path\configs\Uninstall-Microsoft365Apps.xml",
-        "$Path\intunewin\IntuneWinAppUtil.exe",
-        "$Path\m365\setup.exe",
-        "$Path\icons\Microsoft365.png",
-        "$Path\scripts\App.json",
-        "$Path\scripts\Create-Win32App.ps1",
-        "$Path\scrub\OffScrub03.vbs",
-        "$Path\scrub\OffScrub07.vbs",
-        "$Path\scrub\OffScrub10.vbs",
-        "$Path\scrub\OffScrubc2r.vbs",
-        "$Path\scrub\OffScrub_O15msi.vbs",
-        "$Path\scrub\OffScrub_O16msi.vbs"
-    ) | ForEach-Object { if (-not (Test-Path -Path $_)) { throw [System.IO.FileNotFoundException]::New("File not found: $_") } }
 }
 
 process {
     #region Create working directories; Copy files for the package
     try {
         # Set output directory and ensure it is empty
-        if ((Get-ChildItem -Path $Destination -Recurse -File).Count -gt 0) {
-            Write-Warning -Message "'$Destination' is not empty. Remove path and try again."
-            return
-        }
+        Test-Destination -Path $Destination
 
         # Create the package directory structure
         Write-Msg -Msg "Create new package structure."
