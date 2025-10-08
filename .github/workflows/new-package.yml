@@ -76,6 +76,7 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
+          Update-Evergreen
           $params = @{
               Path              = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
