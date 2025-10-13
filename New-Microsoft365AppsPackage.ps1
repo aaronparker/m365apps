@@ -1,5 +1,6 @@
 #Requires -PSEdition Desktop
 #Requires -Modules Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit
+
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
@@ -115,8 +116,13 @@ param(
 )
 
 begin {
+    # Configure the environment
+    $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+    $ProgressPreference = [System.Management.Automation.ActionPreference]::SilentlyContinue
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+
     # Import modules
-    Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force -ErrorAction "Stop"
+    Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force
 
     # Validate prerequisites
     Test-PackagePrerequisites -Path $Path -ConfigurationFile $ConfigurationFile -TenantId $TenantId -ClientId $ClientId
@@ -195,13 +201,13 @@ process {
                 throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")
             }
 
-            # Launch script to import the package
-            Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
+            # Use the integrated function to import the package
+            Write-Msg -Msg "Create package using integrated function."
             $params = @{
                 Json        = "$Destination\output\m365apps.json"
                 PackageFile = $PackageFile.FullName
             }
-            $ImportedApp = & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
+            $ImportedApp = New-IntuneWin32AppFromManifest @params | Select-Object -Property * -ExcludeProperty "largeIcon"
             Write-Msg -Msg "Package import complete."
 
             #region Add supersedence for existing packages
