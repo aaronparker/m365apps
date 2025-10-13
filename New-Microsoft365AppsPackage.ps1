@@ -1,6 +1,5 @@
 #Requires -PSEdition Desktop
 #Requires -Modules Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit
-using namespace System.Management.Automation
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
@@ -119,11 +118,10 @@ begin {
     # Import modules
     Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force -ErrorAction "Stop"
 
-    # Validate required files exist
-    Write-Msg -Msg "Validate required files exist."
-    Test-RequiredFiles -Path $Path
+    # Validate prerequisites
+    Test-PackagePrerequisites -Path $Path -ConfigurationFile $ConfigurationFile -TenantId $TenantId -ClientId $ClientId
 
-    # Validate that the input file is XML
+    # Validate that the input file is XML and read it
     Write-Msg -Msg "Read configuration file: $ConfigurationFile."
     $Xml = Import-XmlFile -FilePath $ConfigurationFile
 
@@ -133,92 +131,31 @@ begin {
 }
 
 process {
-    #region Create working directories; Copy files for the package
-    try {
-        # Set output directory and ensure it is empty
-        Test-Destination -Path $Destination
-
-        # Create the package directory structure
-        Write-Msg -Msg "Create new package structure."
-        Write-Msg -Msg "Using package path: $Destination"
-        New-Item -Path "$Destination\source" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-        New-Item -Path "$Destination\output" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-
-        if ($UsePsadt -eq $true) {
-            # Create a PSADT template
-            Write-Msg -Msg "Create PSADT template"
-            New-ADTTemplate -Destination "$Env:TEMP\psadt" -Force
-            $PsAdtSource = Get-ChildItem -Path "$Env:TEMP\psadt" -Directory -Filter "PSAppDeployToolkit*"
-            Copy-Item -Path "$($PsAdtSource.FullName)\*" -Destination "$Destination\source" -Recurse -Force
-
-            # Copy the PSAppDeployToolkit files to the package source
-            # Copy the customised Invoke-AppDeployToolkit.ps1 to the package source
-            Write-Msg -Msg "Copy Office scrub scripts to: $Destination\source\SupportFiles."
-            Copy-Item -Path "$Path\scrub\*" -Destination "$Destination\source\SupportFiles" -Recurse
-            New-Item -Path "$Destination\source\Files" -ItemType "Directory" -ErrorAction "SilentlyContinue"
-            Write-Msg -Msg "Copy Invoke-AppDeployToolkit.ps1 to: $Destination\source\Invoke-AppDeployToolkit.ps1."
-            Copy-Item -Path "$Path\scripts\Invoke-AppDeployToolkit.ps1" -Destination "$Destination\source\Invoke-AppDeployToolkit.ps1" -Force
-
-            # Copy the configuration files and setup.exe to the package source
-            Write-Msg -Msg "Copy configuration files and setup.exe to package source."
-            Copy-Item -Path $ConfigurationFile -Destination "$Destination\source\Files\Install-Microsoft365Apps.xml"
-            Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Destination\source\Files\Uninstall-Microsoft365Apps.xml"
-            Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Destination\source\Files\setup.exe"
-        }
-        else {
-            # Copy the configuration files and setup.exe to the package source
-            Write-Msg -Msg "Copy configuration files and setup.exe to package source."
-            Copy-Item -Path $ConfigurationFile -Destination "$Destination\source\Install-Microsoft365Apps.xml"
-            Copy-Item -Path "$Path\configs\Uninstall-Microsoft365Apps.xml" -Destination "$Destination\source\Uninstall-Microsoft365Apps.xml"
-            Copy-Item -Path "$Path\m365\setup.exe" -Destination "$Destination\source\setup.exe"
-        }
-    }
-    catch {
-        throw $_
+    #region Initialize package structure and copy files
+    Invoke-WithErrorHandling -Operation "Initialize package structure" -ScriptBlock {
+        Initialize-PackageStructure -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt $UsePsadt.IsPresent
     }
     #endregion
 
     #region Update the configuration.xml
-    try {
-        # Set the path to the configuration file
-        if ($UsePsadt -eq $true) {
-            $InstallXml = "$Destination\source\Files\Install-Microsoft365Apps.xml"
-        }
-        else {
-            $InstallXml = "$Destination\source\Install-Microsoft365Apps.xml"
-        }
-
-        Write-Msg -Msg "Read configuration file: $InstallXml."
-        [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
-
-        Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
-        $Xml.Configuration.Add.Channel = $Channel
-
-        Write-Msg -Msg "Set tenant id to: $TenantId."
-        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
-        $Xml.Configuration.Property[$Index].Value = $TenantId
-
-        Write-Msg -Msg "Set company name to: $CompanyName."
-        $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
-
-        Write-Msg -Msg "Save configuration xml to: $InstallXml."
-        $Xml.Save($InstallXml)
-    }
-    catch {
-        throw $_
+    $xml = Invoke-WithErrorHandling -Operation "Update configuration" -ScriptBlock {
+        $configPath = if ($UsePsadt) { "$Destination\source\Files\Install-Microsoft365Apps.xml" } else { "$Destination\source\Install-Microsoft365Apps.xml" }
+        Update-M365Configuration -ConfigurationPath $configPath -Channel $Channel -TenantId $TenantId -CompanyName $CompanyName
     }
     #endregion
 
     #region Create the intunewin package
-    Write-Msg -Msg "Create intunewin package in: $Path\output."
-    $params = @{
-        SourceFolder         = "$Destination\source"
-        SetupFile            = if ($UsePsadt -eq $true) { "Files\setup.exe" } else { "setup.exe" }
-        OutputFolder         = "$Destination\output"
-        Force                = $true
-        IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
+    Invoke-WithErrorHandling -Operation "Create intunewin package" -ScriptBlock {
+        Write-Msg -Msg "Create intunewin package in: $Destination\output."
+        $params = @{
+            SourceFolder         = "$Destination\source"
+            SetupFile            = if ($UsePsadt) { "Files\setup.exe" } else { "setup.exe" }
+            OutputFolder         = "$Destination\output"
+            Force                = $true
+            IntuneWinAppUtilPath = "$Path\intunewin\IntuneWinAppUtil.exe"
+        }
+        New-IntuneWin32AppPackage @params
     }
-    New-IntuneWin32AppPackage @params
     #endregion
 
     # Save a copy of the modified configuration file to the output folder for reference
@@ -226,144 +163,37 @@ process {
     Write-Msg -Msg "Saved configuration file to: $OutputXml."
     $Xml.Save($OutputXml)
 
-    #region Create a new App.json for the package & update based on the setup.exe version & configuration.xml
-    try {
-        $SetupVersion = (Get-Item -Path "$Path\m365\setup.exe").VersionInfo.FileVersion
-        Write-Msg -Msg "Using setup.exe version: $SetupVersion."
-
-        Write-Msg -Msg "Copy App.json to: $Destination\output\m365apps.json."
-        if ($UsePsadt -eq $true) {
-            Copy-Item -Path "$Path\scripts\App.json" -Destination "$Destination\output\m365apps.json"
-        }
-        else {
-            Copy-Item -Path "$Path\scripts\AppNoPsadt.json" -Destination "$Destination\output\m365apps.json"
-        }
-
-        Write-Msg -Msg "Get content from: $Destination\output\m365apps.json."
-        $Manifest = Get-Content -Path "$Destination\output\m365apps.json" | ConvertFrom-Json
-
-        Write-Msg -Msg "Using setup.exe version: $SetupVersion."
-        $Manifest.PackageInformation.Version = $SetupVersion
-
-        Write-Msg -Msg "Read configuration xml file: $InstallXml."
-        [System.Xml.XmlDocument]$Xml = Get-Content -Path $InstallXml
-
-        # Update package display name
-        [System.String] $ProductID = ""
-        switch ($Xml.Configuration.Add.Product.ID) {
-            "O365ProPlusRetail" {
-                $ProductID += "Microsoft 365 Apps for enterprise, "
-            }
-            "O365BusinessRetail" {
-                $ProductID += "Microsoft 365 Apps for business, "
-            }
-            "VisioProRetail" {
-                $ProductID += "Visio, "
-            }
-            "ProjectProRetail" {
-                $ProductID += "Project, "
-            }
-            "AccessRuntimeRetail" {
-                $ProductID += "Access Runtime, "
-            }
-        }
-        [System.String] $DisplayName = "$ProductID$($Xml.Configuration.Add.Channel)"
-        if ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { $DisplayName = "$DisplayName, x64" }
-        if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
-        Write-Msg -Msg "Package display name: $DisplayName."
-        $Manifest.Information.DisplayName = $DisplayName
-
-        # Set the PSPackageFactory GUID to the GUID in the configuration.xml
-        # This allows us to track the app via the configuration ID once imported into Intune
-        $Manifest.Information.PSPackageFactoryGuid = $Xml.Configuration.ID
-
-        # Update icon location
-        Write-Msg -Msg "Using icon location: $Path\icons\Microsoft365.png."
-        $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
-
-        # Update package description
-        $Description = "$($xml.Configuration.Info.Description)`n`n**This package uses the PSAppDeployToolkit and will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
-        Write-Msg -Msg "Package description: $Description."
-        $Manifest.Information.Description = $Description
-
-        # Read the product Ids from the XML, order in alphabetical order, update ProductReleaseIds value in JSON
-        $ProductReleaseIDs = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
-        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "ProductReleaseIds"))
-        Write-Msg -Msg "Update registry ProductReleaseIds detection rule: $ProductReleaseIDs."
-        $Manifest.DetectionRule[$Index].Value = $ProductReleaseIDs
-
-        # Update the registry VersionToReport version number detection rule
-        Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
-        $ChannelVersion = Get-EvergreenApp -Name "Microsoft365Apps" | Where-Object { $_.Channel -eq $Channel }
-        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "VersionToReport"))
-        Write-Msg -Msg "Update registry VersionToReport detection rule: $($ChannelVersion.Version)."
-        $Manifest.DetectionRule[$Index].Value = $ChannelVersion.Version
-
-        # Update the registry SharedComputerLicensing detection rule
-        Remove-Variable -Name "Index" -ErrorAction "SilentlyContinue"
-        $Index = $Manifest.DetectionRule.IndexOf($($Manifest.DetectionRule -cmatch "SharedComputerLicensing"))
-        $Value = ($Xml.Configuration.Property | Where-Object { $_.Name -eq "SharedComputerLicensing" }).Value
-        Write-Msg -Msg "Update registry SharedComputerLicensing detection rule: $Value."
-        $Manifest.DetectionRule[$Index].Value = $Value
-
-        # Output details back to the JSON file
-        Write-Msg -Msg "Write updated App.json details back to: $Destination\output\m365apps.json."
-        $Manifest | ConvertTo-Json | Out-File -FilePath "$Destination\output\m365apps.json" -Force
-    }
-    catch {
-        throw $_
+    #region Create and update package manifest
+    $manifest = Invoke-WithErrorHandling -Operation "Create package manifest" -ScriptBlock {
+        New-PackageManifest -Xml $xml -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt $UsePsadt.IsPresent
     }
     #endregion
 
-    #region Authn to the Microsoft Graph
-    if ($PSBoundParameters.ContainsKey("ClientId")) {
-        $params = @{
-            TenantId     = $TenantId
-            ClientId     = $ClientId
-            ClientSecret = $ClientSecret
-        }
-        Write-Msg -Msg "Authenticate to tenant: $TenantId."
-        [Void](Connect-MSIntuneGraph @params)
-    }
+    #region Connect to Intune if credentials provided
+    Connect-IntuneService -TenantId $TenantId -ClientId $ClientId -ClientSecret $ClientSecret
     #endregion
 
-    #region Lets see if this application is already in Intune and needs to be updated
+    #region Check for existing application and determine if update is needed
     Write-Msg -Msg "Retrieve existing Microsoft 365 Apps packages from Intune"
-    Remove-Variable -Name "ExistingApp" -ErrorAction "SilentlyContinue"
     $ExistingApp = Get-IntuneWin32App | `
         Select-Object -Property * -ExcludeProperty "largeIcon" | `
         Where-Object { $_.notes -match "PSPackageFactory" } | `
-        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
+        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
         Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
         Select-Object -First 1
 
-    # Determine whether the new package should be imported
-    if ($null -eq $ExistingApp) {
-        Write-Msg -Msg "Import new application: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
-        $UpdateApp = $true
-    }
-    elseif ([System.String]::IsNullOrEmpty($ExistingApp.displayVersion)) {
-        Write-Msg -Msg "Found matching app but `displayVersion` is null: '$($ExistingApp.displayName)'"
-        $UpdateApp = $false
-    }
-    elseif ($Manifest.PackageInformation.Version -le $ExistingApp.displayVersion) {
-        Write-Msg -Msg "Existing Intune app version is current: '$($ExistingApp.displayName), $($ExistingApp.displayVersion)'"
-        $UpdateApp = $false
-    }
-    elseif ($Manifest.PackageInformation.Version -gt $ExistingApp.displayVersion) {
-        Write-Msg -Msg "Import application version: '$($Manifest.Information.DisplayName), $($ExistingApp.displayVersion)'"
-        $UpdateApp = $true
-    }
+    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $false
     #endregion
 
-    if ($UpdateApp -eq $true -or $Force -eq $true) {
-        if ($Import -eq $true) {
-            #region Authn if authn parameters are passed; Import package into Intune
+    if ($UpdateApp -and $Import) {
+        Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
             Write-Msg -Msg "-Import specified. Importing package into tenant."
 
             # Get the package file
             $PackageFile = Get-ChildItem -Path "$Destination\output" -Recurse -Include "setup.intunewin"
-            if ($null -eq $PackageFile) { throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.") }
+            if ($null -eq $PackageFile) {
+                throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")
+            }
 
             # Launch script to import the package
             Write-Msg -Msg "Create package with: $Path\scripts\Create-Win32App.ps1."
@@ -373,14 +203,13 @@ process {
             }
             $ImportedApp = & "$Path\scripts\Create-Win32App.ps1" @params | Select-Object -Property * -ExcludeProperty "largeIcon"
             Write-Msg -Msg "Package import complete."
-            #endregion
 
             #region Add supersedence for existing packages
-            Write-Msg -Msg "Retrieve Microsoft 365 Apps packages from Intune"
+            Write-Msg -Msg "Retrieve Microsoft 365 Apps packages from Intune for supersedence"
             $Supersedence = Get-IntuneWin32App | `
                 Where-Object { $_.id -ne $ImportedApp.id } | `
                 Where-Object { $_.notes -match "PSPackageFactory" } | `
-                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $Manifest.Information.PSPackageFactoryGuid } | `
+                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
                 Select-Object -Property * -ExcludeProperty "largeIcon" | `
                 Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
                 ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
