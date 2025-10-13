@@ -1,4 +1,9 @@
-# Functions
+# Configure the environment
+$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+$InformationPreference = [System.Management.Automation.ActionPreference]::Continue
+$ProgressPreference = [System.Management.Automation.ActionPreference]::SilentlyContinue
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+
 function Write-Msg ($Msg) {
     $Message = [HostInformationMessage]@{
         Message         = "[$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')]"
@@ -32,12 +37,12 @@ function Import-XmlFile {
             return $xmlContent
         }
         catch {
-            Write-Error "Failed to read XML file: $_"
+            Write-Error -Message "Failed to read XML file: $_"
             return $null
         }
     }
     else {
-        Write-Error "File not found: $FilePath"
+        Write-Error -Message "File not found: $FilePath"
         return $null
     }
 }
@@ -47,7 +52,6 @@ function Test-RequiredFiles {
         [Parameter(Mandatory = $true)]
         [System.String[]]$FilePath
     }
-
     @(
         "$Path\configs\Uninstall-Microsoft365Apps.xml",
         "$Path\intunewin\IntuneWinAppUtil.exe",
@@ -72,11 +76,9 @@ function Test-Destination {
 
     if (-not (Test-Path -Path $Path -PathType "Container")) {
         throw "'$Path' does not exist or is not a directory."
-        return
     }
     if ((Get-ChildItem -Path $Path -Recurse -File).Count -gt 0) {
         throw "'$Path' is not empty. Remove path and try again."
-        return
     }
 }
 
@@ -152,4 +154,3 @@ function Get-RequiredM365AppsUpdatesFromIntune {
         }
     }
 }
-

@@ -94,9 +94,6 @@ param(
     [ValidateNotNullOrEmpty()]
     [System.String] $CompanyName = "stealthpuppy",
 
-    [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
-    [System.Management.Automation.SwitchParameter] $UsePsadt,
-
     [Parameter(Mandatory = $true, HelpMessage = "The tenant id (GUID) of the target Entra ID tenant.")]
     [ValidateNotNullOrEmpty()]
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
@@ -110,6 +107,9 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Client secret used to authenticate against the app registration.")]
     [ValidateNotNullOrEmpty()]
     [System.String] $ClientSecret,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
+    [System.Management.Automation.SwitchParameter] $UsePsadt,
 
     [Parameter(Mandatory = $false, HelpMessage = "Import the package into Microsoft Intune.")]
     [System.Management.Automation.SwitchParameter] $Import
@@ -146,7 +146,7 @@ process {
 
         if ($UsePsadt -eq $true) {
             # Create a PSADT template
-            Write-Host "Create PSADT template"
+            Write-Msg -Msg "Create PSADT template"
             New-ADTTemplate -Destination "$Env:TEMP\psadt" -Force
             $PsAdtSource = Get-ChildItem -Path "$Env:TEMP\psadt" -Directory -Filter "PSAppDeployToolkit*"
             Copy-Item -Path "$($PsAdtSource.FullName)\*" -Destination "$Destination\source" -Recurse -Force
