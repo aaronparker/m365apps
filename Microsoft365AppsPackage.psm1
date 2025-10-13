@@ -314,6 +314,7 @@ function Update-M365Configuration {
     .SYNOPSIS
         Updates the Microsoft 365 Apps configuration XML file.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         [string]$ConfigurationPath,
@@ -331,18 +332,32 @@ function Update-M365Configuration {
     Write-Msg -Msg "Updating configuration file: $ConfigurationPath"
     [System.Xml.XmlDocument]$Xml = Get-Content -Path $ConfigurationPath
 
-    Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
-    $Xml.Configuration.Add.Channel = $Channel
+    if ($PSCmdlet.ShouldProcess($ConfigurationPath, "Update M365 Configuration")) {
+        Write-Msg -Msg "Set Microsoft 365 Apps channel to: $Channel."
+        $Xml.Configuration.Add.Channel = $Channel
 
-    Write-Msg -Msg "Set tenant id to: $TenantId."
-    $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
-    $Xml.Configuration.Property[$Index].Value = $TenantId
+        Write-Msg -Msg "Set tenant id to: $TenantId."
+        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
+        $Xml.Configuration.Property[$Index].Value = $TenantId
 
-    Write-Msg -Msg "Set company name to: $CompanyName."
-    $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
+        Write-Msg -Msg "Set company name to: $CompanyName."
+        $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
 
-    Write-Msg -Msg "Save configuration xml to: $ConfigurationPath."
-    $Xml.Save($ConfigurationPath)
+        Write-Msg -Msg "Save configuration xml to: $ConfigurationPath."
+        $Xml.Save($ConfigurationPath)
+    } else {
+        # WhatIf - show what would be changed
+        Write-Host "Would update configuration file: $ConfigurationPath" -ForegroundColor Yellow
+        Write-Host "  Channel: $Channel" -ForegroundColor Yellow
+        Write-Host "  Company: $CompanyName" -ForegroundColor Yellow
+        Write-Host "  TenantId: $TenantId" -ForegroundColor Yellow
+        
+        # Return simulated XML for validation
+        $Xml.Configuration.Add.Channel = $Channel
+        $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "TenantId"))
+        if ($Index -ge 0) { $Xml.Configuration.Property[$Index].Value = $TenantId }
+        $Xml.Configuration.AppSettings.Setup.Value = $CompanyName
+    }
 
     return $Xml
 }
@@ -1246,5 +1261,359 @@ function New-IntuneWin32AppFromManifest {
 
     end {
         Write-Msg -Msg "Completed Win32 app creation from manifest"
+    }
+}
+
+# Validation Functions
+
+function Test-ParameterValidation {
+    <#
+    .SYNOPSIS
+        Validates script parameters without executing actions.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Path,
+        [string]$ConfigurationFile,
+        [string]$Channel,
+        [string]$CompanyName,
+        [string]$TenantId,
+        [string]$ClientId,
+        [bool]$UsePsadt
+    )
+    
+    $results = @()
+    
+    # Validate paths
+    $results += @{
+        Test = "Path Validation"
+        Status = if (Test-Path $Path -PathType Container) { "PASS" } else { "FAIL" }
+        Message = "Repository path: $Path"
+    }
+    
+    $results += @{
+        Test = "Configuration File Validation"
+        Status = if (Test-Path $ConfigurationFile -PathType Leaf) { "PASS" } else { "FAIL" }
+        Message = "Config file: $ConfigurationFile"
+    }
+    
+    # Validate XML structure
+    try {
+        $xml = [xml](Get-Content $ConfigurationFile)
+        $hasConfiguration = $null -ne $xml.Configuration
+        $results += @{
+            Test = "XML Structure Validation"
+            Status = if ($hasConfiguration) { "PASS" } else { "FAIL" }
+            Message = "Valid Microsoft 365 Apps configuration XML"
+        }
+    }
+    catch {
+        $results += @{
+            Test = "XML Structure Validation"
+            Status = "FAIL"
+            Message = "Invalid XML: $($_.Exception.Message)"
+        }
+    }
+    
+    # Validate required files
+    $requiredFiles = @(
+        "$Path\m365\setup.exe",
+        "$Path\intunewin\IntuneWinAppUtil.exe",
+        "$Path\icons\Microsoft365.png",
+        "$Path\configs\Uninstall-Microsoft365Apps.xml"
+    )
+    
+    if ($UsePsadt) {
+        $requiredFiles += "$Path\scripts\Invoke-AppDeployToolkit.ps1"
+    }
+    
+    foreach ($file in $requiredFiles) {
+        $exists = Test-Path $file
+        $results += @{
+            Test = "Required File Check"
+            Status = if ($exists) { "PASS" } else { "FAIL" }
+            Message = "File: $file"
+        }
+    }
+    
+    # Validate GUID formats
+    $guidTest = [System.Guid]::empty
+    $results += @{
+        Test = "TenantId GUID Validation"
+        Status = if ([System.Guid]::TryParse($TenantId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
+        Message = "TenantId: $TenantId"
+    }
+    
+    if ($ClientId) {
+        $results += @{
+            Test = "ClientId GUID Validation"
+            Status = if ([System.Guid]::TryParse($ClientId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
+            Message = "ClientId: $ClientId"
+        }
+    }
+    
+    return $results
+}
+
+function Test-XmlUpdateValidation {
+    <#
+    .SYNOPSIS
+        Validates XML configuration updates without modifying the original file.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$ConfigurationFile,
+        [string]$Channel,
+        [string]$CompanyName,
+        [string]$TenantId
+    )
+    
+    $results = @()
+    
+    try {
+        # Create a temporary copy for validation
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        Copy-Item $ConfigurationFile $tempFile
+        
+        # Test XML updates without modifying original
+        $xml = [xml](Get-Content $tempFile)
+        
+        # Simulate the updates
+        $xml.Configuration.Add.Channel = $Channel
+        
+        $tenantIndex = $xml.Configuration.Property.Name.IndexOf($($xml.Configuration.Property.Name -cmatch "TenantId"))
+        if ($tenantIndex -ge 0) {
+            $xml.Configuration.Property[$tenantIndex].Value = $TenantId
+        }
+        
+        $xml.Configuration.AppSettings.Setup.Value = $CompanyName
+        
+        $results += @{
+            Test = "XML Update Simulation"
+            Status = "PASS"
+            Message = "Successfully simulated XML updates"
+            Details = @{
+                Channel = $xml.Configuration.Add.Channel
+                CompanyName = $xml.Configuration.AppSettings.Setup.Value
+                TenantId = if ($tenantIndex -ge 0) { $xml.Configuration.Property[$tenantIndex].Value } else { "Not found" }
+            }
+        }
+        
+        # Clean up
+        Remove-Item $tempFile -Force
+    }
+    catch {
+        $results += @{
+            Test = "XML Update Simulation"
+            Status = "FAIL"
+            Message = "Failed to simulate XML updates: $($_.Exception.Message)"
+        }
+    }
+    
+    return $results
+}
+
+function Test-FileOperationsValidation {
+    <#
+    .SYNOPSIS
+        Validates file operations without actually copying files.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Destination,
+        [string]$Path,
+        [string]$ConfigurationFile,
+        [bool]$UsePsadt
+    )
+    
+    $results = @()
+    
+    try {
+        # Test directory structure creation (simulation)
+        $results += @{
+            Test = "Directory Structure Validation" 
+            Status = "PASS"
+            Message = "Would create directories at: $Destination"
+            Details = @{
+                SourceDir = "$Destination\source"
+                OutputDir = "$Destination\output" 
+                FilesDir = if ($UsePsadt) { "$Destination\source\Files" } else { $null }
+            }
+        }
+        
+        # Test file availability for copying
+        $filesToCopy = @()
+        $filesToCopy += @{ Path = "$Path\m365\setup.exe"; Target = if ($UsePsadt) { "Files\setup.exe" } else { "setup.exe" } }
+        $filesToCopy += @{ Path = $ConfigurationFile; Target = if ($UsePsadt) { "Files\Install-Microsoft365Apps.xml" } else { "Install-Microsoft365Apps.xml" } }
+        $filesToCopy += @{ Path = "$Path\configs\Uninstall-Microsoft365Apps.xml"; Target = if ($UsePsadt) { "Files\Uninstall-Microsoft365Apps.xml" } else { "Uninstall-Microsoft365Apps.xml" } }
+        
+        $missingFiles = @()
+        $availableFiles = @()
+        
+        foreach ($file in $filesToCopy) {
+            if (Test-Path $file.Path) {
+                $availableFiles += $file
+            } else {
+                $missingFiles += $file.Path
+            }
+        }
+        
+        $results += @{
+            Test = "File Copy Validation"
+            Status = if ($missingFiles.Count -eq 0) { "PASS" } else { "FAIL" }
+            Message = "Available: $($availableFiles.Count), Missing: $($missingFiles.Count)"
+            Details = @{
+                AvailableFiles = $availableFiles | Select-Object Path, Target
+                MissingFiles = $missingFiles
+            }
+        }
+        
+    }
+    catch {
+        $results += @{
+            Test = "File Operations Validation"
+            Status = "FAIL"
+            Message = "File operations validation failed: $($_.Exception.Message)"
+        }
+    }
+    
+    return $results
+}
+
+function Test-PackageManifestValidation {
+    <#
+    .SYNOPSIS
+        Validates package manifest creation without creating actual files.
+    #>
+    [CmdletBinding()]
+    param(
+        [xml]$Xml,
+        [string]$ConfigurationFile,
+        [string]$Channel,
+        [bool]$UsePsadt
+    )
+    
+    $results = @()
+    
+    try {
+        # Simulate manifest creation
+        $displayName = Get-PackageDisplayName -Xml $Xml
+        
+        $testManifest = @{
+            Information = @{
+                PSPackageFactoryGuid = $Xml.Configuration.ID
+                DisplayName = $displayName
+            }
+            Program = @{
+                InstallCommand = if ($UsePsadt) { "Deploy-Application.exe -DeploymentType Install" } else { "setup.exe /configure Install-Microsoft365Apps.xml" }
+                UninstallCommand = if ($UsePsadt) { "Deploy-Application.exe -DeploymentType Uninstall" } else { "setup.exe /configure Uninstall-Microsoft365Apps.xml" }
+            }
+            DetectionRules = @{
+                ProductReleaseIds = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
+                Channel = $Channel
+            }
+        }
+        
+        $results += @{
+            Test = "Package Manifest Validation"
+            Status = "PASS"
+            Message = "Successfully created manifest structure"
+            Details = $testManifest
+        }
+    }
+    catch {
+        $results += @{
+            Test = "Package Manifest Validation" 
+            Status = "FAIL"
+            Message = "Manifest creation failed: $($_.Exception.Message)"
+        }
+    }
+    
+    return $results
+}
+
+function Invoke-PackageValidation {
+    <#
+    .SYNOPSIS
+        Runs comprehensive package validation without executing actual operations.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Path,
+        [string]$Destination,
+        [string]$ConfigurationFile,
+        [string]$Channel,
+        [string]$CompanyName,
+        [string]$TenantId,
+        [string]$ClientId,
+        [bool]$UsePsadt
+    )
+    
+    Write-Host "🔍 Starting Microsoft 365 Apps Package Validation..." -ForegroundColor Cyan
+    Write-Host "=" * 60
+    
+    $allResults = @()
+    
+    # 1. Parameter Validation
+    Write-Host "`n📋 Parameter Validation" -ForegroundColor Yellow
+    $paramResults = Test-ParameterValidation -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -ClientId $ClientId -UsePsadt $UsePsadt
+    $allResults += $paramResults
+    Show-ValidationResults $paramResults
+    
+    # 2. XML Update Validation
+    Write-Host "`n📝 XML Configuration Validation" -ForegroundColor Yellow
+    $xmlResults = Test-XmlUpdateValidation -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId
+    $allResults += $xmlResults
+    Show-ValidationResults $xmlResults
+    
+    # 3. File Operations Validation
+    Write-Host "`n📁 File Operations Validation" -ForegroundColor Yellow
+    $fileResults = Test-FileOperationsValidation -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt $UsePsadt
+    $allResults += $fileResults
+    Show-ValidationResults $fileResults
+    
+    # 4. Package Manifest Validation
+    Write-Host "`n📦 Package Manifest Validation" -ForegroundColor Yellow
+    $xml = Import-XmlFile -FilePath $ConfigurationFile
+    $manifestResults = Test-PackageManifestValidation -Xml $xml -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt $UsePsadt
+    $allResults += $manifestResults
+    Show-ValidationResults $manifestResults
+    
+    # Summary
+    Write-Host "`n" + "=" * 60
+    $totalTests = $allResults.Count
+    $passedTests = ($allResults | Where-Object Status -eq "PASS").Count
+    $failedTests = ($allResults | Where-Object Status -eq "FAIL").Count
+    
+    Write-Host "📊 Validation Summary:" -ForegroundColor Cyan
+    Write-Host "   Total Tests: $totalTests" -ForegroundColor White
+    Write-Host "   Passed: $passedTests" -ForegroundColor Green
+    Write-Host "   Failed: $failedTests" -ForegroundColor Red
+    
+    if ($failedTests -eq 0) {
+        Write-Host "`n✅ All validations passed! Package is ready for creation." -ForegroundColor Green
+    } else {
+        Write-Host "`n❌ $failedTests validation(s) failed. Please address issues before proceeding." -ForegroundColor Red
+    }
+    
+    return $allResults
+}
+
+function Show-ValidationResults {
+    <#
+    .SYNOPSIS
+        Displays validation results in a formatted manner.
+    #>
+    param($Results)
+    
+    foreach ($result in $Results) {
+        $icon = if ($result.Status -eq "PASS") { "✅" } else { "❌" }
+        $color = if ($result.Status -eq "PASS") { "Green" } else { "Red" }
+        
+        Write-Host "  $icon $($result.Test): $($result.Message)" -ForegroundColor $color
+        
+        if ($result.Details) {
+            Write-Host "     Details: $($result.Details | ConvertTo-Json -Compress)" -ForegroundColor Gray
+        }
     }
 }

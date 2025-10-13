@@ -1,6 +1,5 @@
 #Requires -PSEdition Desktop
 #Requires -Modules Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit
-
 <#
     .SYNOPSIS
         Create the Intune package for the Microsoft 365 Apps and imported into an Intune tenant.
@@ -35,8 +34,8 @@
     .PARAMETER ClientSecret
         Client secret used to authenticate against the app registration.
 
-    .PARAMETER Import
-        Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant.
+    .PARAMETER SkipImport
+        Switch parameter to specify that the the package should not be imported into the Microsoft Intune tenant.
 
     .EXAMPLE
         Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
@@ -47,7 +46,7 @@
             CompanyName       = stealthpuppy
             UsePsadt          = $true
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-            Import            = $true
+            SkipImport        = $false
         }
         .\New-Microsoft365AppsPackage.ps1 @params
 
@@ -60,7 +59,7 @@
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
             ClientId          = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
             ClientSecret      = <secret>
-            Import            = $true
+            SkipImport        = $false
         }
         .\New-Microsoft365AppsPackage.ps1 @params
 
@@ -68,7 +67,7 @@
         Author: Aaron Parker
         Bluesky: @stealthpuppy.com
 #>
-[CmdletBinding(SupportsShouldProcess = $false)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [Parameter(Mandatory = $false, HelpMessage = "Path to the top level directory of the repository.")]
     [ValidateNotNullOrEmpty()]
@@ -111,8 +110,11 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
     [System.Management.Automation.SwitchParameter] $UsePsadt,
 
-    [Parameter(Mandatory = $false, HelpMessage = "Import the package into Microsoft Intune.")]
-    [System.Management.Automation.SwitchParameter] $Import
+    [Parameter(Mandatory = $false, HelpMessage = "Validate package creation without executing.")]
+    [System.Management.Automation.SwitchParameter] $ValidateOnly,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Skip Intune import operations.")]
+    [System.Management.Automation.SwitchParameter] $SkipImport
 )
 
 begin {
@@ -137,6 +139,12 @@ begin {
 }
 
 process {
+    # If ValidateOnly is specified, run validation and exit
+    if ($ValidateOnly) {
+        $validationResults = Invoke-PackageValidation -Path $Path -Destination $Destination -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -ClientId $ClientId -UsePsadt $UsePsadt.IsPresent
+        return $validationResults
+    }
+
     #region Initialize package structure and copy files
     Invoke-WithErrorHandling -Operation "Initialize package structure" -ScriptBlock {
         Initialize-PackageStructure -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt $UsePsadt.IsPresent
@@ -191,7 +199,7 @@ process {
     $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $false
     #endregion
 
-    if ($UpdateApp -and $Import) {
+    if ($UpdateApp -and -not $SkipImport) {
         Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
             Write-Msg -Msg "-Import specified. Importing package into tenant."
 
@@ -227,6 +235,8 @@ process {
             # Output imported application details
             $ImportedApp
         }
+    } elseif ($SkipImport) {
+        Write-Msg -Msg "Skipping Intune import due to -SkipImport parameter."
     }
 }
 
