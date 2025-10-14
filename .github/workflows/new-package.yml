@@ -1,7 +1,7 @@
 # Creates a Microsoft 365 Apps package and optionally imports into a target Intune tenant
 # Uses secrets on the repo - TENANT_ID, CLIENT_ID, and CLIENT_SECRET
 # to import the package into a target tenant
-name: 'New package with PSADT'
+name: 'Import package'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,6 +39,10 @@ on:
         description: Company name
         required: false
         default: stealthpuppy
+      psadt:
+        description: "Use the PSAppDeployToolkit"
+        default: true
+        type: boolean
       import:
         description: "Import (if not selected, download package from pipeline artifacts)"
         default: true
@@ -66,9 +70,17 @@ jobs:
         id: psmodulecache
         uses: potatoqualitee/psmodulecache@v6.2.1
         with:
-          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::, PSAppDeployToolkit:4.0.6"
+          modules-to-cache: "Evergreen::, MSAL.PS::, IntuneWin32App::, PSAppDeployToolkit:4.1.5"
           updatable: true
           shell: powershell
+
+      - name: Update Evergreen apps
+        id: update-evergreen
+        shell: powershell
+        working-directory: "${{ github.workspace }}"
+        run: |
+          Import-Module -Name Evergreen -Force
+          Update-Evergreen
 
       - name: Create and Import package
         id: import-package
@@ -76,18 +88,20 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
-          Update-Evergreen
           $params = @{
-              Path              = "${{ github.workspace }}"
+              TenantId     = "${{ secrets.TENANT_ID }}"
+              ClientId     = "${{ secrets.CLIENT_ID }}"
+              ClientSecret = "${{ secrets.CLIENT_SECRET }}"
+          }
+          Connect-MSIntuneGraph @params
+
+          $params = @{
+              Path             = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
-              Channel           = "${{ github.event.inputs.channel }}"
-              CompanyName       = "${{ github.event.inputs.companyname }}"
-              UsePsadt          = $true
-              TenantId          = "${{ secrets.TENANT_ID }}"
-              ClientId          = "${{ secrets.CLIENT_ID }}"
-              ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
-              Import            = $true
-              Verbose           = $true
+              Channel          = "${{ github.event.inputs.channel }}"
+              CompanyName      = "${{ github.event.inputs.companyname }}""
+              TenantId         = "${{ secrets.TENANT_ID }}"
+              UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
@@ -98,16 +112,13 @@ jobs:
         working-directory: "${{ github.workspace }}"
         run: |
           $params = @{
-              Path              = "${{ github.workspace }}"
+              Path             = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
-              Channel           = "${{ github.event.inputs.channel }}"
-              CompanyName       = "${{ github.event.inputs.companyname }}"
-              UsePsadt          = $true
-              TenantId          = "${{ secrets.TENANT_ID }}"
-              ClientId          = "${{ secrets.CLIENT_ID }}"
-              ClientSecret      = "${{ secrets.CLIENT_SECRET }}"
-              Import            = $false
-              Verbose           = $true
+              Channel          = "${{ github.event.inputs.channel }}"
+              CompanyName      = "${{ github.event.inputs.companyname }}""
+              TenantId         = "${{ secrets.TENANT_ID }}"
+              UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
+              SkipImport       = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
@@ -150,6 +161,7 @@ jobs:
           echo "- Company name: ${{ github.event.inputs.companyname }}" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "- Update channel: ${{ steps.release.outputs.channel }}" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "- Setup.exe version: ${{ steps.release.outputs.setup }}" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          echo "- PSAppDeployToolkit: ${{ github.event.inputs.psadt }}" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "- PSAppDeployToolkit version: ${{ steps.release.outputs.psadt }}" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           echo "" | Out-File -FilePath $Env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
