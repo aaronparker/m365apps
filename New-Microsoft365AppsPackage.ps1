@@ -20,19 +20,13 @@
         A supported Microsoft 365 Apps release channel.
 
     .PARAMETER CompanyName
-        Company name to include in the configuration.xml.
+        Company name - this is used in the configuration.xml.
+
+    .PARAMETER TenantId
+        The tenant id (GUID) of the target Entra ID tenant - this is used in the configuration.xml.
 
     .PARAMETER UsePsadt
         Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.
-
-    .PARAMETER TenantId
-        The tenant id (GUID) of the target Entra ID tenant.
-
-    .PARAMETER ClientId
-        The client id (GUID) of the target Entra ID app registration.
-
-    .PARAMETER ClientSecret
-        Client secret used to authenticate against the app registration.
 
     .PARAMETER SkipImport
         Switch parameter to specify that the the package should not be imported into the Microsoft Intune tenant.
@@ -40,10 +34,10 @@
     .EXAMPLE
         Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
         $params = @{
-            Path              = E:\project\m365Apps
-            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlus.xml
-            Channel           = Current
-            CompanyName       = stealthpuppy
+            Path              = "E:\projects\m365Apps"
+            ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
+            Channel           = "Current"
+            CompanyName       = "stealthpuppy"
             UsePsadt          = $true
             TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
             SkipImport        = $false
@@ -52,13 +46,11 @@
 
     .EXAMPLE
         $params = @{
-            Path              = E:\project\m365Apps
-            ConfigurationFile  = E:\project\m365Apps\configs\O365ProPlusVisioProRetailProjectProRetail.xml
-            Channel           = Current
-            CompanyName       = stealthpuppy
-            TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-            ClientId          = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
-            ClientSecret      = <secret>
+            Path              = "E:\projects\m365Apps"
+            ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlusVisioProRetailProjectProRetail.xml"
+            Channel           = "Current"
+            CompanyName       = "stealthpuppy"
+            TenantId          = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
             SkipImport        = $false
         }
         .\New-Microsoft365AppsPackage.ps1 @params
@@ -181,10 +173,6 @@ process {
     $manifest = Invoke-WithErrorHandling -Operation "Create package manifest" -ScriptBlock {
         New-PackageManifest -Xml $xml -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt $UsePsadt.IsPresent
     }
-    #endregion
-
-    #region Connect to Intune if credentials provided
-    Connect-IntuneService -TenantId $TenantId -ClientId $ClientId -ClientSecret $ClientSecret
     #endregion
 
     #region Check for existing application and determine if update is needed

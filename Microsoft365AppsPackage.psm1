@@ -345,7 +345,8 @@ function Update-M365Configuration {
 
         Write-Msg -Msg "Save configuration xml to: $ConfigurationPath."
         $Xml.Save($ConfigurationPath)
-    } else {
+    }
+    else {
         # WhatIf - show what would be changed
         Write-Host "Would update configuration file: $ConfigurationPath" -ForegroundColor Yellow
         Write-Host "  Channel: $Channel" -ForegroundColor Yellow
@@ -407,6 +408,7 @@ function New-PackageManifest {
 
     # Set the PSPackageFactory GUID
     $Manifest.Information.PSPackageFactoryGuid = $Xml.Configuration.ID
+    Write-Msg -Msg "Package GUID: $($Manifest.Information.PSPackageFactoryGuid)."
 
     # Update icon location
     $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
@@ -433,19 +435,28 @@ function Get-PackageDisplayName {
         [System.Xml.XmlDocument]$Xml
     )
 
-    [System.String] $ProductID = ""
+    # Build an array of the product names
+    $ProductID = [System.Collections.ArrayList]::new()
     switch ($Xml.Configuration.Add.Product.ID) {
-        "O365ProPlusRetail" { $ProductID += "Microsoft 365 Apps for enterprise, " }
-        "O365BusinessRetail" { $ProductID += "Microsoft 365 Apps for business, " }
-        "VisioProRetail" { $ProductID += "Visio, " }
-        "ProjectProRetail" { $ProductID += "Project, " }
-        "AccessRuntimeRetail" { $ProductID += "Access Runtime, " }
+        "O365ProPlusRetail" { [void]$ProductID.Add("Microsoft 365 Apps for enterprise") }
+        "O365BusinessRetail" { [void]$ProductID.Add("Microsoft 365 Apps for business") }
+        "VisioProRetail" { [void]$ProductID.Add("Visio") }
+        "ProjectProRetail" { [void]$ProductID.Add("Project") }
+        "AccessRuntimeRetail" { [void]$ProductID.Add("Access Runtime") }
     }
+    if ("Outlook" -in $Xml.Configuration.Add.Product.ExcludeApp.ID) { [void]$ProductID.Add("Outlook (new)") }
+    if ("OutlookForWindows" -in $Xml.Configuration.Add.Product.ExcludeApp.ID) { [void]$ProductID.Add("Outlook (classic)") }
 
-    [System.String] $DisplayName = "$ProductID$($Xml.Configuration.Add.Channel)"
-    if ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { $DisplayName = "$DisplayName, x64" }
-    if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { $DisplayName = "$DisplayName, x86" }
-    return $DisplayName
+    # Build an array of the configuration properties
+    $Properties = [System.Collections.ArrayList]::new()
+    $Index = $Xml.Configuration.Property.Name.IndexOf($($Xml.Configuration.Property.Name -cmatch "SharedComputerLicensing"))
+    if ($Xml.Configuration.Property[$Index].Value -eq "1") { [void]$Properties.Add("VDI") } else { [void]$Properties.Add("Desktop") }
+    [void]$Properties.Add($Xml.Configuration.Add.Channel)
+    if ($Xml.Configuration.Add.OfficeClientEdition -eq "64") { [void]$Properties.Add("x64") }
+    if ($Xml.Configuration.Add.OfficeClientEdition -eq "32") { [void]$Properties.Add("x86") }
+
+    # Return the combined display name
+    return "$($ProductID -join ", "): $($Properties -join ", ")"
 }
 
 function Update-DetectionRules {
@@ -481,35 +492,6 @@ function Update-DetectionRules {
     $Value = ($Xml.Configuration.Property | Where-Object { $_.Name -eq "SharedComputerLicensing" }).Value
     Write-Msg -Msg "Update registry SharedComputerLicensing detection rule: $Value."
     $Manifest.DetectionRule[$Index].Value = $Value
-}
-
-function Connect-IntuneService {
-    <#
-    .SYNOPSIS
-        Connects to Intune service if credentials are provided.
-    #>
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$TenantId,
-
-        [Parameter(Mandatory = $false)]
-        [string]$ClientId,
-
-        [Parameter(Mandatory = $false)]
-        [string]$ClientSecret
-    )
-
-    if ($ClientId -and $ClientSecret) {
-        $params = @{
-            TenantId     = $TenantId
-            ClientId     = $ClientId
-            ClientSecret = $ClientSecret
-        }
-        Write-Msg -Msg "Authenticate to tenant: $TenantId."
-        [Void](Connect-MSIntuneGraph @params)
-        return $true
-    }
-    return $false
 }
 
 function Test-ShouldUpdateApp {
@@ -655,7 +637,7 @@ function New-Microsoft365AppsPackageSimplified {
     }
 
     if ($Import) {
-        Connect-IntuneService -TenantId $AuthConfig.TenantId -ClientId $AuthConfig.ClientId -ClientSecret $AuthConfig.ClientSecret
+        $result = Connect-IntuneService -TenantId $AuthConfig.TenantId -ClientId $AuthConfig.ClientId -ClientSecret $AuthConfig.ClientSecret
 
         # Get existing app
         $ExistingApp = Get-IntuneWin32App | `
@@ -1286,14 +1268,14 @@ function Test-ParameterValidation {
     
     # Validate paths
     $results += @{
-        Test = "Path Validation"
-        Status = if (Test-Path $Path -PathType Container) { "PASS" } else { "FAIL" }
+        Test    = "Path Validation"
+        Status  = if (Test-Path $Path -PathType Container) { "PASS" } else { "FAIL" }
         Message = "Repository path: $Path"
     }
     
     $results += @{
-        Test = "Configuration File Validation"
-        Status = if (Test-Path $ConfigurationFile -PathType Leaf) { "PASS" } else { "FAIL" }
+        Test    = "Configuration File Validation"
+        Status  = if (Test-Path $ConfigurationFile -PathType Leaf) { "PASS" } else { "FAIL" }
         Message = "Config file: $ConfigurationFile"
     }
     
@@ -1302,15 +1284,15 @@ function Test-ParameterValidation {
         $xml = [xml](Get-Content $ConfigurationFile)
         $hasConfiguration = $null -ne $xml.Configuration
         $results += @{
-            Test = "XML Structure Validation"
-            Status = if ($hasConfiguration) { "PASS" } else { "FAIL" }
+            Test    = "XML Structure Validation"
+            Status  = if ($hasConfiguration) { "PASS" } else { "FAIL" }
             Message = "Valid Microsoft 365 Apps configuration XML"
         }
     }
     catch {
         $results += @{
-            Test = "XML Structure Validation"
-            Status = "FAIL"
+            Test    = "XML Structure Validation"
+            Status  = "FAIL"
             Message = "Invalid XML: $($_.Exception.Message)"
         }
     }
@@ -1330,8 +1312,8 @@ function Test-ParameterValidation {
     foreach ($file in $requiredFiles) {
         $exists = Test-Path $file
         $results += @{
-            Test = "Required File Check"
-            Status = if ($exists) { "PASS" } else { "FAIL" }
+            Test    = "Required File Check"
+            Status  = if ($exists) { "PASS" } else { "FAIL" }
             Message = "File: $file"
         }
     }
@@ -1339,15 +1321,15 @@ function Test-ParameterValidation {
     # Validate GUID formats
     $guidTest = [System.Guid]::empty
     $results += @{
-        Test = "TenantId GUID Validation"
-        Status = if ([System.Guid]::TryParse($TenantId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
+        Test    = "TenantId GUID Validation"
+        Status  = if ([System.Guid]::TryParse($TenantId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
         Message = "TenantId: $TenantId"
     }
     
     if ($ClientId) {
         $results += @{
-            Test = "ClientId GUID Validation"
-            Status = if ([System.Guid]::TryParse($ClientId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
+            Test    = "ClientId GUID Validation"
+            Status  = if ([System.Guid]::TryParse($ClientId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
             Message = "ClientId: $ClientId"
         }
     }
@@ -1389,13 +1371,13 @@ function Test-XmlUpdateValidation {
         $xml.Configuration.AppSettings.Setup.Value = $CompanyName
         
         $results += @{
-            Test = "XML Update Simulation"
-            Status = "PASS"
+            Test    = "XML Update Simulation"
+            Status  = "PASS"
             Message = "Successfully simulated XML updates"
             Details = @{
-                Channel = $xml.Configuration.Add.Channel
+                Channel     = $xml.Configuration.Add.Channel
                 CompanyName = $xml.Configuration.AppSettings.Setup.Value
-                TenantId = if ($tenantIndex -ge 0) { $xml.Configuration.Property[$tenantIndex].Value } else { "Not found" }
+                TenantId    = if ($tenantIndex -ge 0) { $xml.Configuration.Property[$tenantIndex].Value } else { "Not found" }
             }
         }
         
@@ -1404,8 +1386,8 @@ function Test-XmlUpdateValidation {
     }
     catch {
         $results += @{
-            Test = "XML Update Simulation"
-            Status = "FAIL"
+            Test    = "XML Update Simulation"
+            Status  = "FAIL"
             Message = "Failed to simulate XML updates: $($_.Exception.Message)"
         }
     }
@@ -1431,13 +1413,13 @@ function Test-FileOperationsValidation {
     try {
         # Test directory structure creation (simulation)
         $results += @{
-            Test = "Directory Structure Validation" 
-            Status = "PASS"
+            Test    = "Directory Structure Validation" 
+            Status  = "PASS"
             Message = "Would create directories at: $Destination"
             Details = @{
                 SourceDir = "$Destination\source"
                 OutputDir = "$Destination\output" 
-                FilesDir = if ($UsePsadt) { "$Destination\source\Files" } else { $null }
+                FilesDir  = if ($UsePsadt) { "$Destination\source\Files" } else { $null }
             }
         }
         
@@ -1453,26 +1435,27 @@ function Test-FileOperationsValidation {
         foreach ($file in $filesToCopy) {
             if (Test-Path $file.Path) {
                 $availableFiles += $file
-            } else {
+            }
+            else {
                 $missingFiles += $file.Path
             }
         }
         
         $results += @{
-            Test = "File Copy Validation"
-            Status = if ($missingFiles.Count -eq 0) { "PASS" } else { "FAIL" }
+            Test    = "File Copy Validation"
+            Status  = if ($missingFiles.Count -eq 0) { "PASS" } else { "FAIL" }
             Message = "Available: $($availableFiles.Count), Missing: $($missingFiles.Count)"
             Details = @{
                 AvailableFiles = $availableFiles | Select-Object Path, Target
-                MissingFiles = $missingFiles
+                MissingFiles   = $missingFiles
             }
         }
         
     }
     catch {
         $results += @{
-            Test = "File Operations Validation"
-            Status = "FAIL"
+            Test    = "File Operations Validation"
+            Status  = "FAIL"
             Message = "File operations validation failed: $($_.Exception.Message)"
         }
     }
@@ -1500,31 +1483,31 @@ function Test-PackageManifestValidation {
         $displayName = Get-PackageDisplayName -Xml $Xml
         
         $testManifest = @{
-            Information = @{
+            Information    = @{
                 PSPackageFactoryGuid = $Xml.Configuration.ID
-                DisplayName = $displayName
+                DisplayName          = $displayName
             }
-            Program = @{
-                InstallCommand = if ($UsePsadt) { "Deploy-Application.exe -DeploymentType Install" } else { "setup.exe /configure Install-Microsoft365Apps.xml" }
+            Program        = @{
+                InstallCommand   = if ($UsePsadt) { "Deploy-Application.exe -DeploymentType Install" } else { "setup.exe /configure Install-Microsoft365Apps.xml" }
                 UninstallCommand = if ($UsePsadt) { "Deploy-Application.exe -DeploymentType Uninstall" } else { "setup.exe /configure Uninstall-Microsoft365Apps.xml" }
             }
             DetectionRules = @{
                 ProductReleaseIds = ($Xml.Configuration.Add.Product.ID | Sort-Object) -join ","
-                Channel = $Channel
+                Channel           = $Channel
             }
         }
         
         $results += @{
-            Test = "Package Manifest Validation"
-            Status = "PASS"
+            Test    = "Package Manifest Validation"
+            Status  = "PASS"
             Message = "Successfully created manifest structure"
             Details = $testManifest
         }
     }
     catch {
         $results += @{
-            Test = "Package Manifest Validation" 
-            Status = "FAIL"
+            Test    = "Package Manifest Validation" 
+            Status  = "FAIL"
             Message = "Manifest creation failed: $($_.Exception.Message)"
         }
     }
@@ -1582,8 +1565,8 @@ function Invoke-PackageValidation {
     # Summary
     Write-Host "`n" + "=" * 60
     $totalTests = $allResults.Count
-    $passedTests = ($allResults | Where-Object Status -eq "PASS").Count
-    $failedTests = ($allResults | Where-Object Status -eq "FAIL").Count
+    $passedTests = ($allResults | Where-Object Status -EQ "PASS").Count
+    $failedTests = ($allResults | Where-Object Status -EQ "FAIL").Count
     
     Write-Host "📊 Validation Summary:" -ForegroundColor Cyan
     Write-Host "   Total Tests: $totalTests" -ForegroundColor White
@@ -1592,7 +1575,8 @@ function Invoke-PackageValidation {
     
     if ($failedTests -eq 0) {
         Write-Host "`n✅ All validations passed! Package is ready for creation." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "`n❌ $failedTests validation(s) failed. Please address issues before proceeding." -ForegroundColor Red
     }
     
