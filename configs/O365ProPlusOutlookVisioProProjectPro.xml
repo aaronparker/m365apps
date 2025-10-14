@@ -1,35 +1,22 @@
 <Configuration ID="cb61f7bd-1657-4df8-94e6-e9b23f369167">
-  <Info Description="Microsoft 365 Apps for enterprise 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams, Visio and Project." />
+  <Info Description="Microsoft 365 Apps for enterprise including Word, Excel, PowerPoint, Outlook (new), OneNote, OneDrive, Teams, Visio and Project." />
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365ProPlusRetail">
       <Language ID="MatchOS" />
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Outlook" />
       <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Bing" />
     </Product>
     <Product ID="VisioProRetail">
       <Language ID="MatchOS" />
-      <Language ID="MatchPreviousMSI" />
-      <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Outlook" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Bing" />
     </Product>
     <Product ID="ProjectProRetail">
       <Language ID="MatchOS" />
-      <Language ID="MatchPreviousMSI" />
-      <ExcludeApp ID="Access" />
-      <ExcludeApp ID="Groove" />
-      <ExcludeApp ID="Lync" />
-      <ExcludeApp ID="Outlook" />
-      <ExcludeApp ID="Publisher" />
-      <ExcludeApp ID="Bing" />
     </Product>
   </Add>
   <Property Name="SharedComputerLicensing" Value="0" />
