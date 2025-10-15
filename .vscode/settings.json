@@ -1,26 +1,5 @@
 {
-    "cSpell.words": [
-        "authn",
-        "AUTOACTIVATE",
-        "autopackage",
-        "clientid",
-        "clientsecret",
-        "codeql",
-        "CONFIGURATIONXML",
-        "DATEF",
-        "ghaction",
-        "GPGKEY",
-        "GPGPASSPHRASE",
-        "gpgsign",
-        "HKEY",
-        "Lync",
-        "potatoqualitee",
-        "psmodulecache",
-        "sarif",
-        "signingkey",
-        "softprops",
-        "stefanzweifel",
-        "tenantid",
-        "TMPDIR"
-    ]
+    "files.eol": "\n",
+    "powershell.scriptAnalysis.settingsPath": ".rules/PSScriptAnalyzerSettings.psd1",
+    "powershell.scriptAnalysis.enable": true
 }
