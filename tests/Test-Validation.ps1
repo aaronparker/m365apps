@@ -2,7 +2,7 @@
 # Test script for validation functions
 
 # Import the module
-Import-Module "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force
+Import-Module (Resolve-Path -Path (Join-Path $PSScriptRoot '..\Microsoft365AppsPackage.psm1')).Path -Force
 
 # Test validation with ValidateOnly parameter
 Write-Host "Testing validation functionality..." -ForegroundColor Green
