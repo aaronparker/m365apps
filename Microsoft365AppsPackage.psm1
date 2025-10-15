@@ -115,7 +115,7 @@ function Get-M365AppsFromIntune {
 
     process {
         foreach ($Id in $PackageId) {
-            Write-Msg -Msg "Filtering existing applications to match VcList PackageId."
+            Write-Msg -Msg "Filtering existing applications to match Microsoft 365 Apps PackageId."
             foreach ($Application in $ExistingIntuneApps) {
                 if (($Application.notes | ConvertFrom-Json -ErrorAction "Stop").Guid -in $Id) {
 
