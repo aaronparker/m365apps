@@ -110,7 +110,13 @@ begin {
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
 
     # Import modules
-    Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force
+    try {
+        Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force
+    }
+    catch {
+        Write-Error "Failed to import module 'Microsoft365AppsPackage.psm1' from path '$PSScriptRoot'. Please ensure the module exists and is not corrupted. Error details: $($_.Exception.Message)"
+        exit 1
+    }
 
     # Validate prerequisites
     Test-PackagePrerequisites -Path $Path -ConfigurationFile $ConfigurationFile -TenantId $TenantId
