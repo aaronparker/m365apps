@@ -174,13 +174,14 @@ process {
     $ExistingApp = Get-M365AppsFromIntune -PackageId $manifest.Information.PSPackageFactoryGuid | `
         Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
         Select-Object -First 1
+    Write-Msg -Msg "Found $($ExistingApp.count) existing Microsoft 365 Apps packages in Intune."
 
-    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $Force.IsPresent
+    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force:$Force.IsPresent
     #endregion
 
     if ($UpdateApp -and -not $SkipImport) {
         Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
-            Write-Msg -Msg "-Import specified. Importing package into tenant."
+            Write-Msg -Msg "Importing package into tenant."
 
             # Get the package file
             $PackageFile = Get-ChildItem -Path "$Destination\output" -Recurse -Include "setup.intunewin"

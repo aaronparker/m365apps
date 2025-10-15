@@ -125,42 +125,6 @@ function Get-M365AppsFromIntune {
     }
 }
 
-function Get-RequiredM365AppsUpdatesFromIntune {
-    [CmdletBinding(SupportsShouldProcess = $false)]
-    param (
-        [System.String[]] $PackageId
-    )
-
-    begin {
-        # Get the existing VcRedist Win32 applications from Intune
-        $ExistingIntuneApps = Get-VcRedistAppsFromIntune -VcList $VcList
-    }
-
-    process {
-        foreach ($Application in $ExistingIntuneApps) {
-            $VcRedist = $PackageId | Where-Object { $_.PackageId -eq $Application.packageId }
-            if ($null -eq $VcRedist) {
-                Write-Verbose -Message "No matching VcRedist found for application with ID: $($Application.Id). Skipping."
-                continue
-            }
-            else {
-                $Update = $false
-                if ([System.Version]$VcRedist.Version -gt [System.Version]$Application.displayVersion) {
-                    $Update = $true
-                    Write-Verbose -Message "Update required for $($Application.displayName): $($VcRedist.Version) > $($Application.displayVersion)."
-                }
-                $Object = [PSCustomObject]@{
-                    "AppId"          = $Application.Id
-                    "IntuneVersion"  = $Application.displayVersion
-                    "UpdateVersion"  = $VcRedist.Version
-                    "UpdateRequired" = $Update
-                }
-                Write-Output -InputObject $Object
-            }
-        }
-    }
-}
-
 function Test-PackagePrerequisites {
     <#
     .SYNOPSIS
@@ -500,7 +464,7 @@ function Test-ShouldUpdateApp {
         [PSObject]$ExistingApp,
 
         [Parameter(Mandatory = $false)]
-        [bool]$Force = $false
+        [System.Management.Automation.SwitchParameter]$Force
     )
 
     if ($Force) {
@@ -564,103 +528,6 @@ class PackageConfig {
     [string]$CompanyName
     [bool]$UsePsadt
     [string]$Destination
-}
-
-function New-Microsoft365AppsPackageSimplified {
-    <#
-    .SYNOPSIS
-        Simplified entry point for creating Microsoft 365 Apps packages.
-    #>
-    param(
-        [Parameter(Mandatory = $true)]
-        [PackageConfig]$PackageConfig,
-
-        [Parameter(Mandatory = $true)]
-        [System.String]$TenantId,
-
-        [Parameter(Mandatory = $false)]
-        [bool]$Force = $false
-    )
-
-    # Single validation call
-    Test-PackagePrerequisites -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -TenantId $TenantId
-
-    # Read initial XML
-    $xml = Import-XmlFile -FilePath $PackageConfig.ConfigurationFile
-
-    # Unblock files
-    Get-ChildItem -Path $PackageConfig.Path -Recurse -Include "*.exe" | Unblock-File
-
-    # Simplified workflow
-    Invoke-WithErrorHandling -Operation "Initialize package structure" -ScriptBlock {
-        Initialize-PackageStructure -Destination $PackageConfig.Destination -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -UsePsadt $PackageConfig.UsePsadt
-    }
-
-    $xml = Invoke-WithErrorHandling -Operation "Update configuration" -ScriptBlock {
-        $configPath = if ($PackageConfig.UsePsadt) { "$($PackageConfig.Destination)\source\Files\Install-Microsoft365Apps.xml" } else { "$($PackageConfig.Destination)\source\Install-Microsoft365Apps.xml" }
-        Update-M365Configuration -ConfigurationPath $configPath -Channel $PackageConfig.Channel -TenantId $TenantId -CompanyName $PackageConfig.CompanyName
-    }
-
-    Invoke-WithErrorHandling -Operation "Create intunewin package" -ScriptBlock {
-        $params = @{
-            SourceFolder         = "$($PackageConfig.Destination)\source"
-            SetupFile            = if ($PackageConfig.UsePsadt) { "Files\setup.exe" } else { "setup.exe" }
-            OutputFolder         = "$($PackageConfig.Destination)\output"
-            Force                = $true
-            IntuneWinAppUtilPath = "$($PackageConfig.Path)\intunewin\IntuneWinAppUtil.exe"
-        }
-        New-IntuneWin32AppPackage @params
-    }
-
-    # Save configuration file copy
-    $OutputXml = "$($PackageConfig.Destination)\output\$(Split-Path -Path $PackageConfig.ConfigurationFile -Leaf)"
-    $xml.Save($OutputXml)
-
-    $manifest = Invoke-WithErrorHandling -Operation "Create package manifest" -ScriptBlock {
-        New-PackageManifest -Xml $xml -Destination $PackageConfig.Destination -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -Channel $PackageConfig.Channel -UsePsadt $PackageConfig.UsePsadt
-    }
-
-    # Get existing app
-    $ExistingApp = Get-IntuneWin32App | `
-        Select-Object -Property * -ExcludeProperty "largeIcon" | `
-        Where-Object { $_.notes -match "PSPackageFactory" } | `
-        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
-        Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
-        Select-Object -First 1
-
-    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $Force
-
-    if ($UpdateApp) {
-        return Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
-            $PackageFile = Get-ChildItem -Path "$($PackageConfig.Destination)\output" -Recurse -Include "setup.intunewin"
-            if ($null -eq $PackageFile) {
-                throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")
-            }
-
-            $params = @{
-                Json        = "$($PackageConfig.Destination)\output\m365apps.json"
-                PackageFile = $PackageFile.FullName
-            }
-            $ImportedApp = New-IntuneWin32AppFromManifest @params | Select-Object -Property * -ExcludeProperty "largeIcon"
-
-            # Add supersedence
-            $Supersedence = Get-IntuneWin32App | `
-                Where-Object { $_.id -ne $ImportedApp.id } | `
-                Where-Object { $_.notes -match "PSPackageFactory" } | `
-                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
-                Select-Object -Property * -ExcludeProperty "largeIcon" | `
-                Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
-                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
-
-            if ($null -ne $Supersedence) {
-                Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
-            }
-
-            return $ImportedApp
-        }
-    }
-
-    return $manifest
 }
 
 function New-IntuneWin32AppFromManifest {
