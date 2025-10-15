@@ -95,7 +95,7 @@ $params = @{
     ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
     Channel          = "Current"
     TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
-    CompanyName      = stealthpuppy
+    CompanyName      = "stealthpuppy"
     UsePsadt         = $true
 }
 .\New-Microsoft365AppsPackage.ps1 @params

@@ -88,6 +88,8 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
+          New-Item -Path ""${{ github.workspace }}\package" -ItemType Directory -Force
+
           $params = @{
               TenantId     = "${{ secrets.TENANT_ID }}"
               ClientId     = "${{ secrets.CLIENT_ID }}"
