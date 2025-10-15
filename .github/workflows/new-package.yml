@@ -101,7 +101,7 @@ jobs:
               Channel          = "${{ github.event.inputs.channel }}"
               CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
-              UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
+              UsePsadt         = [System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}")
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
@@ -117,7 +117,7 @@ jobs:
               Channel          = "${{ github.event.inputs.channel }}"
               CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
-              UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
+              UsePsadt         = [System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}")
               SkipImport       = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
