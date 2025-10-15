@@ -41,7 +41,13 @@ When the package is generated, the following properties will be updated:
 
 `New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1 - the IntuneWin32App module and IntuneWinAppUtil.exe require Windows.
 
-The following modules are required: Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit.
+The following modules are required: [Evergreen](https://eucpilots.com/evergreen-docs/), MSAL.PS, IntuneWin32App, PSAppDeployToolkit. Install and update with:
+
+```powershell
+Install-Module -Name "Evergreen", "MSAL.PS", "IntuneWin32App", "PSAppDeployToolkit"
+Import-Module -Name "Evergreen"
+Update-Evergreen
+```
 
 ### Authentication
 
