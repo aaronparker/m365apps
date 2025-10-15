@@ -2,7 +2,7 @@
 
 A PowerShell script and GitHub Actions workflow for creating a Microsoft Intune package for the Microsoft 365 Apps.
 
-![The Microsoft 365 Apps package imported into Intune](.img/intune-package.png)
+![The Microsoft 365 Apps package imported into Intune](.img/intune-package.jpeg)
 
 For full details on how to use this solution see: [An Intune Package Factory for the Microsoft 365 Apps](https://stealthpuppy.com/m365apps-package-factory/).
 
@@ -31,29 +31,21 @@ When the package is generated, the following properties will be updated:
 * Tenant id
 * Channel
 
-## Scripts
+## Usage
 
 * `New-Microsoft365AppsPackage.ps1` - Creates and imports a Microsoft 365 Apps package into Intune via GitHub Actions or from a local copy of this repository
+* `New-Microsoft365AppsPackage.psm1` - Contains functions used by `New-Microsoft365AppsPackage.ps1`
 * `scrub` - Office Scrub Scripts, Office uninstall and scrub scripts sources from [Deploy-OfficeClickToRun](https://github.com/OfficeDev/Office-IT-Pro-Deployment-Scripts/tree/master/Office-ProPlus-Deployment/Deploy-OfficeClickToRun). These ensure that existing Office MSI or Click-to-Run packages installed on the target machine are cleanly uninstalled before installing the Microsoft 365 Apps
 
 ### New-Microsoft365AppsPackage.ps1 Requirements
 
-`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1 - the IntuneWin32App module and IntuneWinAppUtil.exe require Windows. Parameters for `New-Microsoft365AppsPackage.ps1` are:
+`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1 - the IntuneWin32App module and IntuneWinAppUtil.exe require Windows.
 
-| Parameter | Description | Required |
-|:--|:--|:--|
-| Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
-| Destination | Path where the package will be created. Defaults to a 'package' directory under $Path. | No |
-| ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
-| Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
-| CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
-| UsePsadt | Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit. When used this will include the PSADT in the package which will include scripts to uninstall earlier versions of Microsoft Office before installing the Microsoft 365 Apps | No. |
-| TenantId | The tenant id (GUID) of the target Entra ID tenant. | Yes |
-| SkipImport | Switch parameter to specify that the the package should not be imported into the Microsoft Intune tenant. | No |
+The following modules are required: Evergreen, MSAL.PS, IntuneWin32App, PSAppDeployToolkit.
 
-### Usage
+### Authentication
 
-Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administrator account before running the script. Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Entra ID app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
+Authenticating to Intune is required before importing an package with `New-Microsoft365AppsPackage.ps1`. Use an Entra ID app registration
 
 ```powershell
 $params = @{
@@ -62,6 +54,36 @@ $params = @{
     ClientSecret = "<secret>"
 }
 Connect-MSIntuneGraph @params
+```
+
+### App Registration Requirements
+
+The app registration requires the following API permissions:
+
+| API / Permissions name | Type | Description | Admin consent required |
+|:--|:--|:--|:--|
+| DeviceManagementApps.ReadWriteAll | Application | Read and write Microsoft Intune apps | Yes |
+
+### Parameters
+
+Parameters for `New-Microsoft365AppsPackage.ps1` are:
+
+| Parameter | Description | Required |
+|:--|:--|:--|
+| Path | Path to the top level directory of the m365apps repository on a local Windows machine. | No |
+| Destination | Path where the package will be created. Defaults to a 'package' directory under $Path. | No |
+| ConfigurationFile | Full path to the [Microsoft 365 Apps package configuration file](https://learn.microsoft.com/en-us/deployoffice/office-deployment-tool-configuration-options). Specify the full path to a configuration file included in the repository or the path to an external configuration file. | Yes |
+| Channel | A supported Microsoft 365 Apps release channel. | No. Defaults to MonthlyEnterprise |
+| CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
+| TenantId | The tenant id (GUID) of the target Entra ID tenant. | Yes |
+| UsePsadt | Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit. When used this will include the PSADT in the package which will include scripts to uninstall earlier versions of Microsoft Office before installing the Microsoft 365 Apps | No. |
+| SkipImport | Switch parameter to specify that the the package should not be imported into the Microsoft Intune tenant. | No |
+
+### Importing packages
+
+To import packages, specify the required parameters for `New-Microsoft365AppsPackage.ps1` including the target configuration file:
+
+```powershell
 $params = @{
     Path             = "E:\projects\m365Apps"
     ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
@@ -73,13 +95,16 @@ $params = @{
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
 
-### App Registration Requirements
+### Package version
 
-The app registration requires the following API permissions:
+The version number configured on the target package is the version of the Office Deployment Tool (setup.exe), not the version of the Microsoft 365 Apps. This means that packages only need to be updated when a new version of the Office Deployment Tool is released.
 
-| API / Permissions name | Type | Description | Admin consent required |
-|:--|:--|:--|:--|
-| DeviceManagementApps.ReadWriteAll | Application | Read and write Microsoft Intune apps | Yes |
+### Assignments and Supersedence
+
+Assignments and supersedence are automatically configured:
+
+* See `scripts/App.json` and `scripts/AppNoPsadt.json` for assignments. These files can be updated to set additional or different assignments
+* Supersedence is configured automatically on a matching packages when a new version is imported
 
 ## New Package Workflow
 
