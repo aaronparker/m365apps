@@ -99,7 +99,7 @@ jobs:
               Path             = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel          = "${{ github.event.inputs.channel }}"
-              CompanyName      = "${{ github.event.inputs.companyname }}""
+              CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
               UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
           }
@@ -115,7 +115,7 @@ jobs:
               Path             = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel          = "${{ github.event.inputs.channel }}"
-              CompanyName      = "${{ github.event.inputs.companyname }}""
+              CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
               UsePsadt         = if (${{ github.event.inputs.psadt }}) { $true } else { $false }
               SkipImport       = $true
