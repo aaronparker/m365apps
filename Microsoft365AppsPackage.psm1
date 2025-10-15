@@ -174,10 +174,7 @@ function Test-PackagePrerequisites {
         [string]$ConfigurationFile,
 
         [Parameter(Mandatory = $true)]
-        [string]$TenantId,
-
-        [Parameter(Mandatory = $false)]
-        [string]$ClientId
+        [string]$TenantId
     )
 
     Write-Msg -Msg "Validating package prerequisites."
@@ -199,10 +196,6 @@ function Test-PackagePrerequisites {
     $guidTest = [System.Guid]::empty
     if (-not [System.Guid]::TryParse($TenantId, [ref]$guidTest)) {
         throw "TenantId is not a valid GUID: '$TenantId'"
-    }
-
-    if ($ClientId -and -not [System.Guid]::TryParse($ClientId, [ref]$guidTest)) {
-        throw "ClientId is not a valid GUID: '$ClientId'"
     }
 
     # Test required files
@@ -573,12 +566,6 @@ class PackageConfig {
     [string]$Destination
 }
 
-class AuthConfig {
-    [string]$TenantId
-    [string]$ClientId
-    [string]$ClientSecret
-}
-
 function New-Microsoft365AppsPackageSimplified {
     <#
     .SYNOPSIS
@@ -589,17 +576,14 @@ function New-Microsoft365AppsPackageSimplified {
         [PackageConfig]$PackageConfig,
 
         [Parameter(Mandatory = $true)]
-        [AuthConfig]$AuthConfig,
-
-        [Parameter(Mandatory = $false)]
-        [bool]$Import = $false,
+        [System.String]$TenantId,
 
         [Parameter(Mandatory = $false)]
         [bool]$Force = $false
     )
 
     # Single validation call
-    Test-PackagePrerequisites -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -TenantId $AuthConfig.TenantId -ClientId $AuthConfig.ClientId
+    Test-PackagePrerequisites -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -TenantId $TenantId
 
     # Read initial XML
     $xml = Import-XmlFile -FilePath $PackageConfig.ConfigurationFile
@@ -614,7 +598,7 @@ function New-Microsoft365AppsPackageSimplified {
 
     $xml = Invoke-WithErrorHandling -Operation "Update configuration" -ScriptBlock {
         $configPath = if ($PackageConfig.UsePsadt) { "$($PackageConfig.Destination)\source\Files\Install-Microsoft365Apps.xml" } else { "$($PackageConfig.Destination)\source\Install-Microsoft365Apps.xml" }
-        Update-M365Configuration -ConfigurationPath $configPath -Channel $PackageConfig.Channel -TenantId $AuthConfig.TenantId -CompanyName $PackageConfig.CompanyName
+        Update-M365Configuration -ConfigurationPath $configPath -Channel $PackageConfig.Channel -TenantId $TenantId -CompanyName $PackageConfig.CompanyName
     }
 
     Invoke-WithErrorHandling -Operation "Create intunewin package" -ScriptBlock {
@@ -636,47 +620,43 @@ function New-Microsoft365AppsPackageSimplified {
         New-PackageManifest -Xml $xml -Destination $PackageConfig.Destination -Path $PackageConfig.Path -ConfigurationFile $PackageConfig.ConfigurationFile -Channel $PackageConfig.Channel -UsePsadt $PackageConfig.UsePsadt
     }
 
-    if ($Import) {
-        $result = Connect-IntuneService -TenantId $AuthConfig.TenantId -ClientId $AuthConfig.ClientId -ClientSecret $AuthConfig.ClientSecret
+    # Get existing app
+    $ExistingApp = Get-IntuneWin32App | `
+        Select-Object -Property * -ExcludeProperty "largeIcon" | `
+        Where-Object { $_.notes -match "PSPackageFactory" } | `
+        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
+        Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
+        Select-Object -First 1
 
-        # Get existing app
-        $ExistingApp = Get-IntuneWin32App | `
-            Select-Object -Property * -ExcludeProperty "largeIcon" | `
-            Where-Object { $_.notes -match "PSPackageFactory" } | `
-            Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
-            Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
-            Select-Object -First 1
+    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $Force
 
-        $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $Force
-
-        if ($UpdateApp) {
-            return Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
-                $PackageFile = Get-ChildItem -Path "$($PackageConfig.Destination)\output" -Recurse -Include "setup.intunewin"
-                if ($null -eq $PackageFile) {
-                    throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")
-                }
-
-                $params = @{
-                    Json        = "$($PackageConfig.Destination)\output\m365apps.json"
-                    PackageFile = $PackageFile.FullName
-                }
-                $ImportedApp = New-IntuneWin32AppFromManifest @params | Select-Object -Property * -ExcludeProperty "largeIcon"
-
-                # Add supersedence
-                $Supersedence = Get-IntuneWin32App | `
-                    Where-Object { $_.id -ne $ImportedApp.id } | `
-                    Where-Object { $_.notes -match "PSPackageFactory" } | `
-                    Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
-                    Select-Object -Property * -ExcludeProperty "largeIcon" | `
-                    Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
-                    ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
-
-                if ($null -ne $Supersedence) {
-                    Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
-                }
-
-                return $ImportedApp
+    if ($UpdateApp) {
+        return Invoke-WithErrorHandling -Operation "Import package to Intune" -ScriptBlock {
+            $PackageFile = Get-ChildItem -Path "$($PackageConfig.Destination)\output" -Recurse -Include "setup.intunewin"
+            if ($null -eq $PackageFile) {
+                throw [System.IO.FileNotFoundException]::New("Intunewin package file not found.")
             }
+
+            $params = @{
+                Json        = "$($PackageConfig.Destination)\output\m365apps.json"
+                PackageFile = $PackageFile.FullName
+            }
+            $ImportedApp = New-IntuneWin32AppFromManifest @params | Select-Object -Property * -ExcludeProperty "largeIcon"
+
+            # Add supersedence
+            $Supersedence = Get-IntuneWin32App | `
+                Where-Object { $_.id -ne $ImportedApp.id } | `
+                Where-Object { $_.notes -match "PSPackageFactory" } | `
+                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
+                Select-Object -Property * -ExcludeProperty "largeIcon" | `
+                Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
+                ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
+
+            if ($null -ne $Supersedence) {
+                Add-IntuneWin32AppSupersedence -ID $ImportedApp.id -Supersedence $Supersedence
+            }
+
+            return $ImportedApp
         }
     }
 
@@ -1246,8 +1226,6 @@ function New-IntuneWin32AppFromManifest {
     }
 }
 
-# Validation Functions
-
 function Test-ParameterValidation {
     <#
     .SYNOPSIS
@@ -1260,7 +1238,6 @@ function Test-ParameterValidation {
         [string]$Channel,
         [string]$CompanyName,
         [string]$TenantId,
-        [string]$ClientId,
         [bool]$UsePsadt
     )
     
@@ -1324,14 +1301,6 @@ function Test-ParameterValidation {
         Test    = "TenantId GUID Validation"
         Status  = if ([System.Guid]::TryParse($TenantId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
         Message = "TenantId: $TenantId"
-    }
-    
-    if ($ClientId) {
-        $results += @{
-            Test    = "ClientId GUID Validation"
-            Status  = if ([System.Guid]::TryParse($ClientId, [ref]$guidTest)) { "PASS" } else { "FAIL" }
-            Message = "ClientId: $ClientId"
-        }
     }
     
     return $results
@@ -1528,7 +1497,6 @@ function Invoke-PackageValidation {
         [string]$Channel,
         [string]$CompanyName,
         [string]$TenantId,
-        [string]$ClientId,
         [bool]$UsePsadt
     )
     
@@ -1539,7 +1507,7 @@ function Invoke-PackageValidation {
     
     # 1. Parameter Validation
     Write-Host "`n📋 Parameter Validation" -ForegroundColor Yellow
-    $paramResults = Test-ParameterValidation -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -ClientId $ClientId -UsePsadt $UsePsadt
+    $paramResults = Test-ParameterValidation -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt $UsePsadt
     $allResults += $paramResults
     Show-ValidationResults $paramResults
     

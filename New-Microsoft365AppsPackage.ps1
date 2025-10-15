@@ -90,15 +90,6 @@ param(
     [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
     [System.String] $TenantId,
 
-    [Parameter(Mandatory = $false, HelpMessage = "The client id (GUID) of the target Entra ID app registration.")]
-    [ValidateNotNullOrEmpty()]
-    [ValidateScript({ $ObjectGuid = [System.Guid]::empty; if ([System.Guid]::TryParse($_, [System.Management.Automation.PSReference]$ObjectGuid)) { $true } else { throw "$_ is not a GUID" } })]
-    [System.String] $ClientId,
-
-    [Parameter(Mandatory = $false, HelpMessage = "Client secret used to authenticate against the app registration.")]
-    [ValidateNotNullOrEmpty()]
-    [System.String] $ClientSecret,
-
     [Parameter(Mandatory = $false, HelpMessage = "Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit.")]
     [System.Management.Automation.SwitchParameter] $UsePsadt,
 
@@ -106,7 +97,10 @@ param(
     [System.Management.Automation.SwitchParameter] $ValidateOnly,
 
     [Parameter(Mandatory = $false, HelpMessage = "Skip Intune import operations.")]
-    [System.Management.Automation.SwitchParameter] $SkipImport
+    [System.Management.Automation.SwitchParameter] $SkipImport,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Force import even if the same version already exists.")]
+    [System.Management.Automation.SwitchParameter] $Force
 )
 
 begin {
@@ -119,7 +113,7 @@ begin {
     Import-Module -Name "$PSScriptRoot\Microsoft365AppsPackage.psm1" -Force
 
     # Validate prerequisites
-    Test-PackagePrerequisites -Path $Path -ConfigurationFile $ConfigurationFile -TenantId $TenantId -ClientId $ClientId
+    Test-PackagePrerequisites -Path $Path -ConfigurationFile $ConfigurationFile -TenantId $TenantId
 
     # Validate that the input file is XML and read it
     Write-Msg -Msg "Read configuration file: $ConfigurationFile."
@@ -133,7 +127,7 @@ begin {
 process {
     # If ValidateOnly is specified, run validation and exit
     if ($ValidateOnly) {
-        $validationResults = Invoke-PackageValidation -Path $Path -Destination $Destination -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -ClientId $ClientId -UsePsadt $UsePsadt.IsPresent
+        $validationResults = Invoke-PackageValidation -Path $Path -Destination $Destination -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt $UsePsadt.IsPresent
         return $validationResults
     }
 
@@ -177,14 +171,11 @@ process {
 
     #region Check for existing application and determine if update is needed
     Write-Msg -Msg "Retrieve existing Microsoft 365 Apps packages from Intune"
-    $ExistingApp = Get-IntuneWin32App | `
-        Select-Object -Property * -ExcludeProperty "largeIcon" | `
-        Where-Object { $_.notes -match "PSPackageFactory" } | `
-        Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
+    $ExistingApp = Get-M365AppsFromIntune -PackageId $manifest.Information.PSPackageFactoryGuid | `
         Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
         Select-Object -First 1
 
-    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $false
+    $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force $Force.IsPresent
     #endregion
 
     if ($UpdateApp -and -not $SkipImport) {
@@ -208,11 +199,8 @@ process {
 
             #region Add supersedence for existing packages
             Write-Msg -Msg "Retrieve Microsoft 365 Apps packages from Intune for supersedence"
-            $Supersedence = Get-IntuneWin32App | `
+            $Supersedence = Get-M365AppsFromIntune -PackageId $manifest.Information.PSPackageFactoryGuid | `
                 Where-Object { $_.id -ne $ImportedApp.id } | `
-                Where-Object { $_.notes -match "PSPackageFactory" } | `
-                Where-Object { ($_.notes | ConvertFrom-Json -ErrorAction "SilentlyContinue").Guid -eq $manifest.Information.PSPackageFactoryGuid } | `
-                Select-Object -Property * -ExcludeProperty "largeIcon" | `
                 Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
                 ForEach-Object { New-IntuneWin32AppSupersedence -ID $_.id -SupersedenceType "Update" }
             if ($null -ne $Supersedence) {
