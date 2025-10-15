@@ -103,7 +103,7 @@ jobs:
               Channel          = "${{ github.event.inputs.channel }}"
               CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
-              UsePsadt         = [System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}")
+              UsePsadt         = $([System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}"))
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
 
@@ -113,13 +113,15 @@ jobs:
         shell: powershell
         working-directory: "${{ github.workspace }}"
         run: |
+          New-Item -Path "${{ github.workspace }}\package" -ItemType Directory -Force
+
           $params = @{
               Path             = "${{ github.workspace }}"
               ConfigurationFile = "${{ github.workspace }}\configs\${{ github.event.inputs.configuration }}"
               Channel          = "${{ github.event.inputs.channel }}"
               CompanyName      = "${{ github.event.inputs.companyname }}"
               TenantId         = "${{ secrets.TENANT_ID }}"
-              UsePsadt         = [System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}")
+              UsePsadt         = $([System.Convert]::ToBoolean("${{ github.event.inputs.psadt }}"))
               SkipImport       = $true
           }
           & "${{ github.workspace }}\New-Microsoft365AppsPackage.ps1" @params
