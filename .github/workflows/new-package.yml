@@ -41,7 +41,7 @@ on:
         default: stealthpuppy
       psadt:
         description: "Use the PSAppDeployToolkit"
-        default: true
+        default: false
         type: boolean
       import:
         description: "Import (if not selected, download package from pipeline artifacts)"
