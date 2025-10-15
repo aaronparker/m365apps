@@ -32,6 +32,11 @@ jobs:
           updatable: true
           shell: pwsh
 
+      - name: Update Evergreen apps
+        shell: pwsh
+        run: |
+          Update-Evergreen
+
       - name: New tmp dir
         shell: pwsh
         run: |
@@ -40,7 +45,6 @@ jobs:
       - name: Update setup.exe
         shell: pwsh
         run: |
-          Update-Evergreen
           New-Item -Path "${{ github.workspace }}\m365" -ItemType "Directory" -ErrorAction "SilentlyContinue"
           $File = Get-EvergreenApp -Name "Microsoft365Apps" | Select-Object -First 1 | Save-EvergreenApp -Path "${{ github.workspace }}\tmp"
           Move-Item -LiteralPath $File.FullName -Destination "${{ github.workspace }}\m365\$($File.Name)" -Force
