@@ -101,18 +101,21 @@ function Get-M365AppsFromIntune {
         $NotesPattern = '^{"CreatedBy":"PSPackageFactory","Guid":.*}$'
 
         # Get the existing Win32 applications from Intune
-        Write-Verbose -Message "Retrieving existing Win32 applications from Intune."
+        Write-Msg -Msg "Retrieving existing Win32 applications from Intune."
         $ExistingIntuneApps = Get-IntuneWin32App | `
             Where-Object { $_.displayName -match $DisplayNamePattern -and $_.notes -match $NotesPattern } | `
             Select-Object -Property * -ExcludeProperty "largeIcon"
-        if ($ExistingIntuneApps.Count -gt 0) {
-            Write-Verbose -Message "Found $($ExistingIntuneApps.Count) existing Microsoft 365 Apps packages in Intune."
+        if ($ExistingIntuneApps -is [System.Object]) {
+            Write-Msg -Msg "Found 1 existing Microsoft 365 Apps package in Intune."
+        }
+        elseif ($ExistingIntuneApps.Count -gt 0) {
+            Write-Msg -Msg "Found $($ExistingIntuneApps.Count) existing Microsoft 365 Apps packages in Intune."
         }
     }
 
     process {
         foreach ($Id in $PackageId) {
-            Write-Verbose -Message "Filtering existing applications to match VcList PackageId."
+            Write-Msg -Msg "Filtering existing applications to match VcList PackageId."
             foreach ($Application in $ExistingIntuneApps) {
                 if (($Application.notes | ConvertFrom-Json -ErrorAction "Stop").Guid -in $Id) {
 
@@ -132,13 +135,13 @@ function Test-PackagePrerequisites {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [System.String]$Path,
 
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationFile,
+        [System.String]$ConfigurationFile,
 
         [Parameter(Mandatory = $true)]
-        [string]$TenantId
+        [System.String]$TenantId
     )
 
     Write-Msg -Msg "Validating package prerequisites."
@@ -174,16 +177,16 @@ function Initialize-PackageStructure {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Destination,
+        [System.String]$Destination,
 
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [System.String]$Path,
 
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationFile,
+        [System.String]$ConfigurationFile,
 
         [Parameter(Mandatory = $false)]
-        [bool]$UsePsadt = $false
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
 
     Write-Msg -Msg "Initializing package structure."
@@ -214,13 +217,13 @@ function Copy-PsadtFiles {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Destination,
+        [System.String]$Destination,
 
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [System.String]$Path,
 
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationFile
+        [System.String]$ConfigurationFile
     )
 
     # Create a PSADT template
@@ -250,13 +253,13 @@ function Copy-StandardFiles {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Destination,
+        [System.String]$Destination,
 
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [System.String]$Path,
 
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationFile
+        [System.String]$ConfigurationFile
     )
 
     # Copy the configuration files and setup.exe to the package source
@@ -274,16 +277,16 @@ function Update-M365Configuration {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationPath,
+        [System.String]$ConfigurationPath,
 
         [Parameter(Mandatory = $true)]
-        [string]$Channel,
+        [System.String]$Channel,
 
         [Parameter(Mandatory = $true)]
-        [string]$TenantId,
+        [System.String]$TenantId,
 
         [Parameter(Mandatory = $true)]
-        [string]$CompanyName
+        [System.String]$CompanyName
     )
 
     Write-Msg -Msg "Updating configuration file: $ConfigurationPath"
@@ -330,19 +333,19 @@ function New-PackageManifest {
         [System.Xml.XmlDocument]$Xml,
 
         [Parameter(Mandatory = $true)]
-        [string]$Destination,
+        [System.String]$Destination,
 
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [System.String]$Path,
 
         [Parameter(Mandatory = $true)]
-        [string]$ConfigurationFile,
+        [System.String]$ConfigurationFile,
 
         [Parameter(Mandatory = $true)]
-        [string]$Channel,
+        [System.String]$Channel,
 
         [Parameter(Mandatory = $false)]
-        [bool]$UsePsadt = $false
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
 
     Write-Msg -Msg "Creating package manifest."
@@ -371,7 +374,12 @@ function New-PackageManifest {
     $Manifest.PackageInformation.IconFile = "$Path\icons\Microsoft365.png"
 
     # Update package description
-    $Description = "$($xml.Configuration.Info.Description)`n`n**This package uses the PSAppDeployToolkit and will uninstall previous versions of Microsoft Office**. Uses setup.exe $SetupVersion. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+    if ($UsePsadt) {
+        $Description = "$($xml.Configuration.Info.Description)`n`n**This package uses the PSAppDeployToolkit and will uninstall previous versions of Microsoft Office**. Uses setup.exe **$SetupVersion**. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+    }
+    else {
+        $Description = "$($xml.Configuration.Info.Description)`n`nUses setup.exe **$SetupVersion**. Built from configuration file: $(Split-Path -Path $ConfigurationFile -Leaf); Includes: $(($Xml.Configuration.Add.Product.ID | Sort-Object) -join ", ")."
+    }
     $Manifest.Information.Description = $Description
 
     # Update detection rules
@@ -429,7 +437,7 @@ function Update-DetectionRules {
         [System.Xml.XmlDocument]$Xml,
 
         [Parameter(Mandatory = $true)]
-        [string]$Channel
+        [System.String]$Channel
     )
 
     # Update ProductReleaseIds detection rule
@@ -505,7 +513,7 @@ function Invoke-WithErrorHandling {
         [scriptblock]$ScriptBlock,
 
         [Parameter(Mandatory = $true)]
-        [string]$Operation
+        [System.String]$Operation
     )
 
     try {
@@ -522,12 +530,12 @@ function Invoke-WithErrorHandling {
 
 # Configuration classes for simplified parameters
 class PackageConfig {
-    [string]$Path
-    [string]$ConfigurationFile
-    [string]$Channel
-    [string]$CompanyName
+    [System.String]$Path
+    [System.String]$ConfigurationFile
+    [System.String]$Channel
+    [System.String]$CompanyName
     [bool]$UsePsadt
-    [string]$Destination
+    [System.String]$Destination
 }
 
 function New-IntuneWin32AppFromManifest {
@@ -1100,12 +1108,12 @@ function Test-ParameterValidation {
     #>
     [CmdletBinding()]
     param(
-        [string]$Path,
-        [string]$ConfigurationFile,
-        [string]$Channel,
-        [string]$CompanyName,
-        [string]$TenantId,
-        [bool]$UsePsadt
+        [System.String]$Path,
+        [System.String]$ConfigurationFile,
+        [System.String]$Channel,
+        [System.String]$CompanyName,
+        [System.String]$TenantId,
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
     
     $results = @()
@@ -1180,10 +1188,10 @@ function Test-XmlUpdateValidation {
     #>
     [CmdletBinding()]
     param(
-        [string]$ConfigurationFile,
-        [string]$Channel,
-        [string]$CompanyName,
-        [string]$TenantId
+        [System.String]$ConfigurationFile,
+        [System.String]$Channel,
+        [System.String]$CompanyName,
+        [System.String]$TenantId
     )
     
     $results = @()
@@ -1238,10 +1246,10 @@ function Test-FileOperationsValidation {
     #>
     [CmdletBinding()]
     param(
-        [string]$Destination,
-        [string]$Path,
-        [string]$ConfigurationFile,
-        [bool]$UsePsadt
+        [System.String]$Destination,
+        [System.String]$Path,
+        [System.String]$ConfigurationFile,
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
     
     $results = @()
@@ -1307,9 +1315,9 @@ function Test-PackageManifestValidation {
     [CmdletBinding()]
     param(
         [xml]$Xml,
-        [string]$ConfigurationFile,
-        [string]$Channel,
-        [bool]$UsePsadt
+        [System.String]$ConfigurationFile,
+        [System.String]$Channel,
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
     
     $results = @()
@@ -1358,13 +1366,13 @@ function Invoke-PackageValidation {
     #>
     [CmdletBinding()]
     param(
-        [string]$Path,
-        [string]$Destination,
-        [string]$ConfigurationFile,
-        [string]$Channel,
-        [string]$CompanyName,
-        [string]$TenantId,
-        [bool]$UsePsadt
+        [System.String]$Path,
+        [System.String]$Destination,
+        [System.String]$ConfigurationFile,
+        [System.String]$Channel,
+        [System.String]$CompanyName,
+        [System.String]$TenantId,
+        [System.Management.Automation.SwitchParameter]$UsePsadt
     )
     
     Write-Host "🔍 Starting Microsoft 365 Apps Package Validation..." -ForegroundColor Cyan
@@ -1374,7 +1382,7 @@ function Invoke-PackageValidation {
     
     # 1. Parameter Validation
     Write-Host "`n📋 Parameter Validation" -ForegroundColor Yellow
-    $paramResults = Test-ParameterValidation -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt $UsePsadt
+    $paramResults = Test-ParameterValidation -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt:$UsePsadt
     $allResults += $paramResults
     Show-ValidationResults $paramResults
     
@@ -1386,14 +1394,14 @@ function Invoke-PackageValidation {
     
     # 3. File Operations Validation
     Write-Host "`n📁 File Operations Validation" -ForegroundColor Yellow
-    $fileResults = Test-FileOperationsValidation -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt $UsePsadt
+    $fileResults = Test-FileOperationsValidation -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt:$UsePsadt
     $allResults += $fileResults
     Show-ValidationResults $fileResults
     
     # 4. Package Manifest Validation
     Write-Host "`n📦 Package Manifest Validation" -ForegroundColor Yellow
     $xml = Import-XmlFile -FilePath $ConfigurationFile
-    $manifestResults = Test-PackageManifestValidation -Xml $xml -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt $UsePsadt
+    $manifestResults = Test-PackageManifestValidation -Xml $xml -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt:$UsePsadt
     $allResults += $manifestResults
     Show-ValidationResults $manifestResults
     

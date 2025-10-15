@@ -127,13 +127,13 @@ begin {
 process {
     # If ValidateOnly is specified, run validation and exit
     if ($ValidateOnly) {
-        $validationResults = Invoke-PackageValidation -Path $Path -Destination $Destination -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt $UsePsadt.IsPresent
+        $validationResults = Invoke-PackageValidation -Path $Path -Destination $Destination -ConfigurationFile $ConfigurationFile -Channel $Channel -CompanyName $CompanyName -TenantId $TenantId -UsePsadt:$UsePsadt.IsPresent
         return $validationResults
     }
 
     #region Initialize package structure and copy files
     Invoke-WithErrorHandling -Operation "Initialize package structure" -ScriptBlock {
-        Initialize-PackageStructure -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt $UsePsadt.IsPresent
+        Initialize-PackageStructure -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -UsePsadt:$UsePsadt.IsPresent
     }
     #endregion
 
@@ -165,16 +165,14 @@ process {
 
     #region Create and update package manifest
     $manifest = Invoke-WithErrorHandling -Operation "Create package manifest" -ScriptBlock {
-        New-PackageManifest -Xml $xml -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt $UsePsadt.IsPresent
+        New-PackageManifest -Xml $xml -Destination $Destination -Path $Path -ConfigurationFile $ConfigurationFile -Channel $Channel -UsePsadt:$UsePsadt.IsPresent
     }
     #endregion
 
     #region Check for existing application and determine if update is needed
-    Write-Msg -Msg "Retrieve existing Microsoft 365 Apps packages from Intune"
     $ExistingApp = Get-M365AppsFromIntune -PackageId $manifest.Information.PSPackageFactoryGuid | `
         Sort-Object -Property @{ Expression = { [System.Version]$_.displayVersion }; Descending = $true } -ErrorAction "SilentlyContinue" | `
         Select-Object -First 1
-    Write-Msg -Msg "Found $($ExistingApp.count) existing Microsoft 365 Apps packages in Intune."
 
     $UpdateApp = Test-ShouldUpdateApp -Manifest $manifest -ExistingApp $ExistingApp -Force:$Force.IsPresent
     #endregion
