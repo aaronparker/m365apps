@@ -1,15 +1,15 @@
 <Configuration ID="9e75ff9b-eeb4-4f0a-935d-5563c13a080c">
-  <Info Description="Microsoft 365 Apps for business 64-bit including Microsoft Word, Excel, PowerPoint, Outlook, OneNote, OneDrive, Teams." />
+  <Info Description="Microsoft 365 Apps for business including Word, Excel, PowerPoint, Outlook (new), OneNote, OneDrive, Teams." />
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" MigrateArch="TRUE">
     <Product ID="O365BusinessRetail">
       <Language ID="MatchOS" />
       <Language ID="MatchPreviousMSI" />
       <ExcludeApp ID="Access" />
-      <ExcludeApp ID="Groove" />
       <ExcludeApp ID="Outlook" />
       <ExcludeApp ID="Publisher" />
       <ExcludeApp ID="Lync" />
       <ExcludeApp ID="Bing" />
+      <ExcludeApp ID="Groove" />
     </Product>
   </Add>
   <Property Name="SharedComputerLicensing" Value="0" />
