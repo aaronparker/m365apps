@@ -15,7 +15,6 @@ $testParams = @{
     Channel = "Current"
     CompanyName = "TestCompany"
     TenantId = "12345678-1234-1234-1234-123456789012"
-    ClientId = "87654321-4321-4321-4321-210987654321"
     UsePsadt = $false
 }
 

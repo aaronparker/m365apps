@@ -56,7 +56,7 @@ Shows what operations would be performed without actually executing them.
 
 ### 📋 Parameter Validation
 - Verifies all required paths exist
-- Validates GUID formats for TenantId and ClientId
+- Validates GUID formats for TenantId
 - Checks XML configuration file structure
 - Confirms required files are present
 
