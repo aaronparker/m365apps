@@ -34,12 +34,11 @@ When the package is generated, the following properties will be updated:
 ## Scripts
 
 * `New-Microsoft365AppsPackage.ps1` - Creates and imports a Microsoft 365 Apps package into Intune via GitHub Actions or from a local copy of this repository
-* `Create-Win32App.ps1` imports the intunewin package into the target Intune tenant, using `App.json` as the template. Called by `New-Microsoft365AppsPackage.ps1`
 * `scrub` - Office Scrub Scripts, Office uninstall and scrub scripts sources from [Deploy-OfficeClickToRun](https://github.com/OfficeDev/Office-IT-Pro-Deployment-Scripts/tree/master/Office-ProPlus-Deployment/Deploy-OfficeClickToRun). These ensure that existing Office MSI or Click-to-Run packages installed on the target machine are cleanly uninstalled before installing the Microsoft 365 Apps
 
 ### New-Microsoft365AppsPackage.ps1 Requirements
 
-`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1. Parameters for `New-Microsoft365AppsPackage.ps1` are:
+`New-Microsoft365AppsPackage.ps1` must be run on a supported Windows version, and has been written for PowerShell 5.1 - the IntuneWin32App module and IntuneWinAppUtil.exe require Windows. Parameters for `New-Microsoft365AppsPackage.ps1` are:
 
 | Parameter | Description | Required |
 |:--|:--|:--|
@@ -50,42 +49,26 @@ When the package is generated, the following properties will be updated:
 | CompanyName | Company name to include in the configuration.xml. | No. Defaults to stealthpuppy |
 | UsePsadt | Wrap the Microsoft 365 Apps installer with the PowerShell App Deployment Toolkit. When used this will include the PSADT in the package which will include scripts to uninstall earlier versions of Microsoft Office before installing the Microsoft 365 Apps | No. |
 | TenantId | The tenant id (GUID) of the target Entra ID tenant. | Yes |
-| ClientId | The client id (GUID) of the target Entra ID app registration. | No |
-| ClientSecret | Client secret used to authenticate against the app registration. | No |
-| Import | Switch parameter to specify that the the package should be imported into the Microsoft Intune tenant. | No |
+| SkipImport | Switch parameter to specify that the the package should not be imported into the Microsoft Intune tenant. | No |
 
-### Usage via Administrator Sign-in
+### Usage
 
-Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administrator account before running the script. Run `Connect-MSIntuneGraph` to authenticate with administrator credentials using a sign-in window or device login URL.
+Use `New-Microsoft365AppsPackage.ps1` by authenticating with an Intune Administrator account before running the script. Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Entra ID app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
 
 ```powershell
-Connect-MSIntuneGraph -TenantID "lab.stealthpuppy.com"
 $params = @{
-    Path              = E:\project\m365Apps
-    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlus.xml
-    Channel           = Current
-    CompanyName       = stealthpuppy
-    UsePsadt          = $true
-    TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-    Import            = $true
+    TenantId     = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
+    ClientId     = "5e9f991e-748d-4a32-818e-7ddc2cb22ee0"
+    ClientSecret = "<secret>"
 }
-.\New-Microsoft365AppsPackage.ps1 @params
-```
-
-### Usage via App Registration
-
-Use `New-Microsoft365AppsPackage.ps1` to create a new package by passing credentials to an Entra ID app registration that has rights to import applications into Microsoft Intune. This approach can be modified for use within a pipeline:
-
-```powershell
+Connect-MSIntuneGraph @params
 $params = @{
-    Path              = E:\project\m365Apps
-    ConfigurationFile = E:\project\m365Apps\configs\O365ProPlusVisioProProjectPro.xml
-    Channel           = Current
-    CompanyName       = stealthpuppy
-    TenantId          = 6cdd8179-23e5-43d1-8517-b6276a8d3189
-    ClientId          = 60912c81-37e8-4c94-8cd6-b8b90a475c0e
-    ClientSecret      = <secret>
-    Import            = $true
+    Path             = "E:\projects\m365Apps"
+    ConfigurationFile = "E:\projects\m365Apps\configs\O365ProPlus.xml"
+    Channel          = "Current"
+    TenantId         = "6cdd8179-23e5-43d1-8517-b6276a8d3189"
+    CompanyName      = stealthpuppy
+    UsePsadt         = $true
 }
 .\New-Microsoft365AppsPackage.ps1 @params
 ```
@@ -96,7 +79,6 @@ The app registration requires the following API permissions:
 
 | API / Permissions name | Type | Description | Admin consent required |
 |:--|:--|:--|:--|
-| DeviceManagementApps.ReadAll | Application | Read Microsoft Intune apps | Yes |
 | DeviceManagementApps.ReadWriteAll | Application | Read and write Microsoft Intune apps | Yes |
 
 ## New Package Workflow
@@ -121,6 +103,5 @@ This repository includes copies of the following binaries and support files that
 
 * [Microsoft 365 Apps / Office Deployment Tool](https://www.microsoft.com/en-us/download/details.aspx?id=49117) (`setup.exe`) - the key installer required to install, configure and uninstall the Microsoft 365 Apps. Microsoft updates this tool roughly every quarter
 * [Microsoft Win32 Content Prep Tool](https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool) (`IntuneWinAppUtil.exe`) - the tool that converts Win32 applications into the intunewin package format
-* ~~[PSAppDeployToolkit](https://psappdeploytoolkit.com/) - the install is managed with the PowerShell App Deployment Toolkit~~. The PowerShell App Deployment Toolkit 4.x is now used, and is downloaded during package creation
 
 If you have cloned this repository, ensure that you synchronise changes to update binaries to the latest version releases.
